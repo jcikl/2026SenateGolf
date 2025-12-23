@@ -8,7 +8,7 @@ export const MOCK_GUESTS: Guest[] = [
     name: 'Tanaka Kenji',
     gender: 'Male',
     position: 'Delegate',
-    group: 'Group A',
+
     nation: 'Japan',
     localOrg: 'JCI Osaka',
     senatorshipId: '12345',
@@ -81,15 +81,15 @@ export const DEFAULT_CATEGORY_PERMISSIONS: Record<PackageCategory, PermissionMet
     { id: 'apdc_apr01_brk', name: 'Breakfast', date: '01 Apr 2026' },
   ],
   'JCI Malaysia': [
-    { id: 'my_day1_golf', name: 'Day 1 Golf', date: '30 Mar 2026' },
-    { id: 'my_day2_golf', name: 'Day 2 Golf', date: '31 Mar 2026' },
+    { id: 'my_day1_golf', name: 'Day 1 Golf', date: '30 Mar 2026', golfType: 'Day1' },
+    { id: 'my_day2_golf', name: 'Day 2 Golf', date: '31 Mar 2026', golfType: 'Day2' },
     { id: 'my_welcome', name: 'Welcoming Night', date: '29 Mar 2026' },
     { id: 'my_gala', name: 'GALA Night', date: '31 Mar 2026' },
     { id: 'my_day1_meet', name: 'Day 1 Meeting', date: '29 Mar 2026' },
   ],
   'International': [
-    { id: 'int_day1_golf', name: 'Day 1 Golf', date: '30 Mar 2026' },
-    { id: 'int_day2_golf', name: 'Day 2 Golf', date: '31 Mar 2026' },
+    { id: 'int_day1_golf', name: 'Day 1 Golf', date: '30 Mar 2026', golfType: 'Day1' },
+    { id: 'int_day2_golf', name: 'Day 2 Golf', date: '31 Mar 2026', golfType: 'Day2' },
     { id: 'int_day1_hotel', name: 'Day 1 Hotel', date: '27 Mar 2026' },
     { id: 'int_day2_hotel', name: 'Day 2 Hotel', date: '28 Mar 2026' },
     { id: 'int_day3_hotel', name: 'Day 3 Hotel', date: '29 Mar 2026' },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppView, Guest, EventSchedule, PackagePermissions, PackageCategory, PermissionMeta } from './types';
+import { AppView, Guest, EventSchedule, PackagePermissions, PackageCategory, PermissionMeta, GolfGrouping } from './types';
 import { MOCK_GUESTS, MOCK_SCHEDULE, DEFAULT_PACKAGE_PERMISSIONS, DEFAULT_CATEGORY_PERMISSIONS } from './constants';
 import GuestPortal from './views/GuestPortal';
 import StaffPortal from './views/StaffPortal';
@@ -306,15 +306,76 @@ const App: React.FC = () => {
       return !existing || JSON.stringify(existing) !== JSON.stringify(ng);
     });
 
-    if (toSync.length === 0 && toDelete.length === 0) return;
+    // We proceed even if groups didn't change efficiently, but strictly speaking checking golfers is better.
+    // However, to ensure consistency between Groupings and Guests, we should re-eval changed groups.
 
     console.log(`App: Syncing ${toSync.length} golf groupings, deleting ${toDelete.length} from Firestore...`);
+
     try {
       const batch = writeBatch(db);
+
+      // 1. Sync Groupings Collection
       toSync.forEach(g => batch.set(doc(db, "golfGroupings", g.id), g));
       toDelete.forEach(g => batch.delete(doc(db, "golfGroupings", g.id)));
+
+      // 2. Sync Guest Data (Reverse index: Guest -> Flight)
+      // We only need to update guests involved in the CHANGED (toSync) or DELETED (toDelete) groups,
+      // PLUS any guests that MIGHT have been removed from these groups. 
+      // Diffing is complex. Simplest robust approach:
+      // Identify ALL guest IDs involved in oldGroupings AND newList.
+
+      const involvedGuestIds = new Set<string>();
+      [...oldGroupings, ...newList].forEach(g => g.players.forEach(pid => involvedGuestIds.add(pid)));
+
+      // For each involved guest, calculate their correct state based on newList
+      const affectedGuests: Guest[] = [];
+
+      involvedGuestIds.forEach(gid => {
+        const guest = guests.find(g => g.id === gid);
+        if (!guest) return;
+
+        // Find assignments in newList
+        const day1Group = newList.find(g => g.day === 1 && g.players.includes(gid));
+        const day2Group = newList.find(g => g.day === 2 && g.players.includes(gid));
+
+        const newDay1 = day1Group ? { flight: day1Group.flightNumber, teeTime: day1Group.teeTime, buggy: day1Group.buggyNumber || '' } : null;
+        const newDay2 = day2Group ? { flight: day2Group.flightNumber, teeTime: day2Group.teeTime, buggy: day2Group.buggyNumber || '' } : null;
+
+        // Check if changed
+        if (JSON.stringify(guest.golfDay1) !== JSON.stringify(newDay1) || JSON.stringify(guest.golfDay2) !== JSON.stringify(newDay2)) {
+          // Queue update
+          const updatedGuest: Guest = { ...guest };
+          if (newDay1) updatedGuest.golfDay1 = newDay1; else delete updatedGuest.golfDay1;
+          if (newDay2) updatedGuest.golfDay2 = newDay2; else delete updatedGuest.golfDay2;
+
+          // Actually, Firestore set() needs explicit fields or deleteField(). 
+          // But our local guest type has optional golfDay?.
+          // If we send { ...guest, golfDay1: null }, it sets it to null in DB. That works.
+          // Let's stick to null which is safer for "unset".
+
+          const finalGuest = { ...guest, golfDay1: newDay1 || null, golfDay2: newDay2 || null };
+          // Wait, if I use delete keyword in JS, JSON.stringify removes it.
+          // Firestore update({ golfDay1: deleteField() }) is best for deleting.
+          // But here I am using set(doc, full_object). 
+          // If I omit the field in full_object, and use set() (replace), it is gone.
+          // BUT guest object might have other fields. 
+          // The safest is to set it to null if we want to "clear" it in a structured way that supports future "is this set?" checks.
+
+          batch.set(doc(db, "guests", guest.id), { ...guest, golfDay1: newDay1, golfDay2: newDay2 });
+          // We also update local state? No, onSnapshot will handle it if we write to DB. 
+          // BUT we are using optimistic UI for guests? 
+          // Use onUpdateGuests props? No, direct Firestore batch.
+          batch.set(doc(db, "guests", guest.id), updatedGuest);
+          affectedGuests.push(updatedGuest); // Just for logging or optimistic
+        }
+      });
+
+      if (affectedGuests.length > 0) {
+        console.log(`App: syncing golf details for ${affectedGuests.length} guests.`);
+      }
+
       await batch.commit();
-      console.log('App: Golf groupings sync completed.');
+      console.log('App: Golf groupings & Guest details sync completed.');
     } catch (e: any) {
       console.error('App: Failed to sync golf groupings:', e);
       handleFirebaseError(e);
@@ -420,7 +481,7 @@ service cloud.firestore {
 
         {view === 'Guest' && (
           activeGuest ? (
-            <GuestPortal guest={activeGuest} schedules={schedules} packagePermissions={packagePermissions} />
+            <GuestPortal guest={activeGuest} schedules={schedules} packagePermissions={packagePermissions} golfGroupings={golfGroupings} />
           ) : (
             <Login onLogin={(p, n) => {
               const found = guests.find(g => g.name.toLowerCase() === n.toLowerCase() && g.passportLast4 === p);

@@ -103,7 +103,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="font-black text-gray-900 leading-tight group-hover:text-[#014227] transition">{item.title}</h4>
-                        <span className="text-[9px] font-black uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">{item.category}</span>
+
                       </div>
                       <p className="text-xs text-gray-500 font-medium mb-3">{item.description}</p>
                       <div className="flex items-center text-[10px] font-black text-[#014227] uppercase tracking-widest opacity-70 group-hover:opacity-100 transition">

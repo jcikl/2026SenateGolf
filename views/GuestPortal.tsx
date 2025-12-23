@@ -1,15 +1,16 @@
 
 import React from 'react';
-import { Guest, EventSchedule, PackagePermissions } from '../types';
+import { Guest, EventSchedule, PackagePermissions, GolfGrouping } from '../types';
 import { MapPin, Calendar, Trophy, Coffee, AlertCircle, Shirt, Star } from 'lucide-react';
 
 interface GuestPortalProps {
   guest: Guest;
   schedules: EventSchedule[];
   packagePermissions: PackagePermissions;
+  golfGroupings: GolfGrouping[];
 }
 
-const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePermissions }) => {
+const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePermissions, golfGroupings }) => {
   // Filter schedules based on package permissions
   const filteredSchedules = schedules.filter(item => {
     const pkgInfo = packagePermissions[guest.package];
@@ -18,51 +19,67 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20 md:pb-0">
-      {/* VIP Identity Header */}
-      <div className="bg-[#014227] rounded-[40px] shadow-2xl p-10 text-center relative overflow-hidden border-b-8 border-[#FFD700]">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFD700]/10 rounded-full -mr-16 -mt-16"></div>
-        <div className="absolute top-10 left-10 opacity-20"><Star size={40} className="text-[#FFD700]" /></div>
-        
-        <p className="text-[10px] font-black text-[#FFD700] uppercase tracking-[0.5em] mb-4">Official Delegate</p>
-        <h2 className="text-3xl font-black text-white mb-2 tracking-tight">{guest.name}</h2>
-        <div className="inline-flex flex-col items-center mb-10">
-          <div className="inline-flex items-center space-x-2 px-6 py-2 bg-white/10 rounded-full text-xs font-black text-[#FFD700] border border-white/10 uppercase tracking-widest mb-2">
-            <Star size={12} fill="#FFD700" />
-            <span>{guest.package}</span>
+
+      {/* VIP Identity Header - Updated to match GeneralInfo Theme */}
+      <div className="relative h-80 rounded-[40px] overflow-hidden shadow-2xl group bg-gradient-to-b from-[#FFD700] via-[#FFA500] to-[#FF8C00]">
+        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
+        <div className="absolute top-10 right-10 opacity-30 animate-pulse"><Star size={120} className="text-white" /></div>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center pt-10 z-10">
+          <div className="bg-white p-2 rounded-3xl shadow-2xl mb-4 transform group-hover:scale-105 transition duration-500">
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${guest.id}`}
+              alt="QR Code"
+              className="w-32 h-32 rounded-2xl"
+            />
           </div>
-          <span className="text-[9px] font-bold text-white/60 uppercase tracking-widest">
-            {packagePermissions[guest.package]?.category || 'Standard'} Category
-          </span>
+          <p className="text-[10px] font-black text-[#014227] uppercase tracking-[0.5em] bg-white/20 px-4 py-1 rounded-full backdrop-blur-sm">Official Delegate</p>
         </div>
 
-        <div className="bg-white w-56 h-56 mx-auto rounded-[40px] shadow-inner flex items-center justify-center p-8 relative mb-6">
-          <img 
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${guest.id}`} 
-            alt="QR Code" 
-            className="w-full h-full grayscale brightness-0"
-          />
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.05]">
-            <span className="text-4xl font-black text-[#014227] rotate-[-45deg]">JCI KL</span>
+        <div className="absolute inset-x-0 bottom-0 h-[40%] bg-[#014227] flex flex-col items-center justify-center px-6 text-center z-20">
+          <h2 className="text-3xl font-black text-white mb-1 tracking-tight">{guest.name}</h2>
+          <div className="flex items-center space-x-2 opacity-80">
+            <span className="text-[10px] font-black text-[#FFD700] uppercase tracking-widest">{guest.package} Package</span>
+            <span className="text-[10px] text-white/50">•</span>
+            <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{guest.id}</span>
           </div>
         </div>
-        <p className="text-[10px] text-white/40 font-mono tracking-[0.4em] mb-2">{guest.id}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
-          <div className="w-12 h-12 bg-[#FFFBEB] text-[#014227] rounded-2xl flex items-center justify-center mb-3 group-hover:bg-[#FFD700] transition">
+        <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500 hover:shadow-xl">
+          <div className="w-12 h-12 bg-[#FFFBEB] text-[#014227] rounded-2xl flex items-center justify-center mb-3 group-hover:bg-[#014227] group-hover:text-[#FFD700] transition-all duration-300">
             <Coffee size={24} />
           </div>
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Dinner Table</span>
-          <p className="text-3xl font-black text-[#014227]">{guest.dinnerTableNo || 'N/A'}</p>
+          <p className="text-2xl font-black text-[#014227]">{guest.dinnerTableNo || 'Waitlist'}</p>
         </div>
-        <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
-          <div className="w-12 h-12 bg-[#FFFBEB] text-[#014227] rounded-2xl flex items-center justify-center mb-3 group-hover:bg-[#FFD700] transition">
-            <Trophy size={24} />
+
+        {/* Dynamic Golf Info */}
+        {golfGroupings.find(g => g.players.includes(guest.id)) ? (
+          (() => {
+            const flight = golfGroupings.find(g => g.players.includes(guest.id))!;
+            return (
+              <div className="bg-[#014227] p-6 rounded-[32px] shadow-lg border border-[#FFD700]/30 flex flex-col items-center text-center group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-[#FFD700]/10 rounded-full -mr-10 -mt-10"></div>
+                <div className="w-12 h-12 bg-[#FFD700] text-[#014227] rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                  <Trophy size={24} />
+                </div>
+                <span className="text-[9px] font-black text-[#FFD700]/60 uppercase tracking-widest mb-1">Day {flight.day} • {flight.flightNumber}</span>
+                <p className="text-xl font-black text-white">{flight.teeTime}</p>
+                {flight.buggyNumber && <span className="text-[9px] font-bold text-[#FFD700] mt-1 bg-white/10 px-2 py-0.5 rounded">Buggy {flight.buggyNumber}</span>}
+              </div>
+            );
+          })()
+        ) : (
+          <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
+            <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-2xl flex items-center justify-center mb-3">
+              <Trophy size={24} />
+            </div>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Golf Status</span>
+            <p className="text-lg font-bold text-gray-400">Not Playing</p>
           </div>
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Golf Flight</span>
-          <p className="text-3xl font-black text-[#014227]">{guest.golfFlightNo || 'None'}</p>
-        </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -84,7 +101,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
           </div>
         </section>
 
-        {(guest.dietaryRequirements || guest.allergies) && (
+        {(guest.foodPreference || guest.allergies) && (
           <section className="bg-red-50 rounded-[40px] border border-red-100 p-8">
             <h3 className="text-lg font-black flex items-center space-x-3 mb-4 text-red-900">
               <AlertCircle size={22} />
@@ -93,7 +110,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
             <div className="space-y-4">
               <div className="flex flex-col">
                 <span className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Catering Preference</span>
-                <p className="text-sm font-bold text-red-900">{guest.dietaryRequirements || 'Standard'}</p>
+                <p className="text-sm font-bold text-red-900">{guest.foodPreference || 'Standard'}</p>
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Medical Warnings</span>

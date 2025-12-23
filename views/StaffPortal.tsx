@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
 import { Guest, EventSchedule, PackagePermissions } from '../types';
-import { QrCode, Search, CheckCircle, AlertTriangle, AlertCircle, History, XCircle, Calendar } from 'lucide-react';
+
+import { QrCode, Search, CheckCircle, AlertTriangle, AlertCircle, History, XCircle, Calendar, Camera } from 'lucide-react';
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 interface StaffPortalProps {
   guests: Guest[];
@@ -19,14 +21,31 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
 
   const selectedEvent = schedules.find(s => s.id === selectedEventId);
 
-  const handleScan = (guestId: string) => {
+  const handleScan = (guestId: string | null) => {
+    if (!guestId) return;
+
+    // Normalize ID
+    const normalizedId = guestId.trim().toUpperCase();
+    console.log("Scanned/Input ID:", normalizedId);
+
     if (!selectedEventId) {
       alert("PLEASE SELECT THE ACTIVE STATION/EVENT BEFORE SCANNING.");
       return;
     }
-    const found = guests.find(g => g.id === guestId);
-    if (found) setScannedGuest(found);
-    else alert("Invalid QR Code - No matching delegate found in registry.");
+
+    // Direct ID match or search by name (for manual fallback)
+    const found = guests.find(g => g.id.toUpperCase() === normalizedId) ||
+      guests.find(g => g.name.toUpperCase().includes(normalizedId) && normalizedId.length > 3);
+
+    if (found) {
+      setScannedGuest(found);
+    } else {
+      alert("Invalid ID or Check-in Code - No matching delegate found.");
+    }
+  };
+
+  const handleError = (err: any) => {
+    console.error(err);
   };
 
   const validateAccess = (guest: Guest): boolean => {
@@ -95,17 +114,52 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
       {activeTab === 'Scan' ? (
         <div className="space-y-6">
           {!scannedGuest ? (
-            <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 p-12 text-center group">
-              <div className="w-full aspect-square max-w-sm mx-auto bg-[#014227] rounded-[50px] mb-12 relative overflow-hidden flex flex-col items-center justify-center text-white p-6 shadow-[0_20px_50px_rgba(1,66,39,0.3)] border-4 border-gray-50 transform group-hover:scale-[1.02] transition-transform duration-500">
-                <QrCode size={100} className="mb-4 text-[#FFD700] opacity-20" />
-                <div className="absolute top-1/2 left-0 right-0 h-[4px] bg-red-500/80 blur-[3px] animate-scan-line shadow-[0_0_15px_rgba(239,68,68,0.8)]" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent animate-pulse" />
+            <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 p-8 md:p-12 text-center group">
+              <div className="w-full aspect-square max-w-sm mx-auto bg-black rounded-[50px] mb-8 md:mb-12 relative overflow-hidden flex flex-col items-center justify-center shadow-2xl border-4 border-gray-50">
+                {activeTab === 'Scan' && (
+                  <Scanner
+                    onScan={(result) => {
+                      if (result && result.length > 0) {
+                        handleScan(result[0].rawValue);
+                      }
+                    }}
+                    onError={(error) => console.log(error)}
+                    components={{
+                      finder: false
+                    }}
+                    styles={{
+                      container: { width: '100%', height: '100%', borderRadius: '40px' },
+                      video: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: '40px' }
+                    }}
+                  />
+                )}
+                <div className="absolute inset-0 border-[6px] border-[#FFD700]/50 rounded-[50px] pointer-events-none"></div>
+                <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-red-500/80 blur-[2px] shadow-[0_0_10px_red] pointer-events-none animate-scan-line"></div>
               </div>
-              <h3 className="text-2xl font-black text-[#014227] uppercase tracking-[0.3em] mb-8">Awaiting Signal...</h3>
-              <div className="flex gap-3 max-w-md mx-auto">
-                <input type="text" placeholder="G001" className="flex-1 bg-gray-50 border-2 border-gray-100 rounded-3xl px-8 py-5 font-black text-sm outline-none focus:border-[#FFD700] transition-colors" onKeyDown={e => e.key === 'Enter' && handleScan((e.target as any).value)} />
-                <button onClick={() => handleScan('G001')} className="bg-[#FFD700] text-[#014227] px-8 py-5 rounded-3xl font-black text-[10px] uppercase shadow-xl hover:bg-amber-400 transition transform active:scale-95">Verify</button>
+
+              <h3 className="text-xl font-black text-[#014227] uppercase tracking-[0.2em] mb-6">Camera Active</h3>
+
+              <div className="flex gap-3 max-w-md mx-auto relative">
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                  <Search className="text-gray-400" size={16} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Manual Entry (Guest ID)"
+                  className="flex-1 bg-gray-50 border-2 border-gray-100 rounded-3xl pl-12 pr-6 py-5 font-black text-sm outline-none focus:border-[#FFD700] transition-colors uppercase"
+                  onKeyDown={e => e.key === 'Enter' && handleScan((e.target as any).value)}
+                />
+                <button
+                  onClick={(e) => {
+                    const input = (e.currentTarget.previousElementSibling as HTMLInputElement).value;
+                    if (input) handleScan(input);
+                  }}
+                  className="bg-[#014227] text-[#FFD700] px-8 py-5 rounded-3xl font-black text-[10px] uppercase shadow-xl hover:bg-black transition transform active:scale-95"
+                >
+                  Verify
+                </button>
               </div>
+              <p className="text-[10px] text-gray-400 font-bold mt-4 uppercase tracking-widest">Supports ID (e.g. G001) or Name Search</p>
             </div>
           ) : (
             <div className="animate-in zoom-in-95 duration-300">

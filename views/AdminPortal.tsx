@@ -21,6 +21,19 @@ interface AdminPortalProps {
 }
 
 const PACKAGE_CATEGORIES: PackageCategory[] = ['International', 'APDC', 'JCI Malaysia', 'JCI Japan', 'JCI Korea'];
+const NATIONS = ["Malaysia", "Japan", "Korea", "Singapore", "Thailand", "Philippines", "Taiwan", "Hong Kong", "Macau", "Indonesia", "Vietnam", "Cambodia", "India", "Mongolia", "Nepal", "Bangladesh", "Sri Lanka", "Pakistan", "Maldives", "Australia", "New Zealand", "USA", "UK"];
+const TSHIRT_SIZES = ["2XS", "XS", "S", "M", "L", "2XL", "3XL", "5XL", "7XL"];
+
+// Helper for standard Select
+const SelectField: React.FC<{ label: string; value: string; onChange: (v: string) => void; options: string[] }> = ({ label, value, onChange, options }) => (
+  <div className="space-y-1">
+    <label className="text-[10px] font-black uppercase text-gray-400 ml-2">{label}</label>
+    <select className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all appearance-none cursor-pointer" value={value || ''} onChange={e => onChange(e.target.value)}>
+      <option value="">-- SELECT --</option>
+      {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+    </select>
+  </div>
+);
 
 type AdminView = 'Attendees' | 'Itinerary' | 'Packages' | 'Travel' | 'Dining' | 'Golf';
 
@@ -42,10 +55,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [pastedData, setPastedData] = useState('');
+  const [importResult, setImportResult] = useState<{ total: number; imported: number; failed: { row: number; reason: string; data: string }[] } | null>(null);
   const [editingPackage, setEditingPackage] = useState<any>(null);
   const [packageEditData, setPackageEditData] = useState<{ oldName?: string; newName: string; category: PackageCategory }>({ newName: '', category: 'International' });
   const [isPermMetaModalOpen, setIsPermMetaModalOpen] = useState(false);
-  const [permMetaEditData, setPermMetaEditData] = useState<{ category: PackageCategory; id?: string; name: string; date: string; linkedItinerary?: string }>({ category: 'International', name: '', date: '', linkedItinerary: '' });
+  const [permMetaEditData, setPermMetaEditData] = useState<{ category: PackageCategory; id?: string; name: string; date: string; linkedItinerary?: string; golfType?: 'Day1' | 'Day2' }>({ category: 'International', name: '', date: '', linkedItinerary: '' });
+  const [selectedGolfers, setSelectedGolfers] = useState<string[]>([]);
 
   const activePackageTypes = Object.keys(packagePermissions) as PackageType[];
 
@@ -80,7 +95,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
   const handleAddOrUpdatePermMeta = (e: React.FormEvent) => {
     e.preventDefault();
-    const { category, id, name, date, linkedItinerary } = permMetaEditData;
+    const { category, id, name, date, linkedItinerary, golfType } = permMetaEditData;
     if (!name.trim()) return;
     const newCatPerms = { ...categoryPermissions };
     const currentList = [...(newCatPerms[category] || [])];
@@ -88,10 +103,14 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
     if (id) {
       const idx = currentList.findIndex(p => p.id === id);
-      if (idx > -1) currentList[idx] = { id, name, date, linkedItinerary };
+      if (idx > -1) {
+        const updatedRule: PermissionMeta = { id, name, date, linkedItinerary };
+        if (golfType) updatedRule.golfType = golfType;
+        currentList[idx] = updatedRule;
+      }
     } else {
       const newId = `${category.toLowerCase().replace(/\s/g, '')}_${Date.now()}`;
-      currentList.push({ id: newId, name, date, linkedItinerary });
+      currentList.push({ id: newId, name, date, linkedItinerary, golfType });
       Object.keys(newPackagePermissions).forEach(pkg => {
         if (newPackagePermissions[pkg].category === category) {
           if (!newPackagePermissions[pkg].permissions) newPackagePermissions[pkg].permissions = {};
@@ -141,6 +160,53 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     setEditingItem(null);
   };
 
+  const handleGolfAssignment = (guestIds: string[], day: 1 | 2, flight: string, tee: string, buggy: string) => {
+    if (guestIds.length === 0) return;
+
+    // Create deep copy of groupings
+    let newGroupings = [...golfGroupings];
+
+    // 1. Remove guests from any existing flight on this day
+    newGroupings = newGroupings.map(g => {
+      if (g.day !== day) return g;
+      return { ...g, players: g.players.filter(pid => !guestIds.includes(pid)) };
+    }).filter(g => g.players.length > 0 || g.flightNumber // Keep empty flights if we want? Or filter them out. Let's filter empty ones that don't match target to be clean.
+    );
+
+    // 2. Add guests to target flight
+    if (flight) {
+      // Find existing target flight
+      const targetIndex = newGroupings.findIndex(g => g.day === day && g.flightNumber.toLowerCase() === flight.toLowerCase());
+
+      if (targetIndex > -1) {
+        // Update existing
+        const g = newGroupings[targetIndex];
+        // Merge players, unique
+        const combined = Array.from(new Set([...g.players, ...guestIds]));
+        newGroupings[targetIndex] = { ...g, players: combined, teeTime: tee || g.teeTime, buggyNumber: buggy || g.buggyNumber };
+        // Note: For batch, if tee/buggy provided, we update the whole flight? 
+        // "Batch set flight details". Yes, usually implies setting properties for that flight.
+      } else {
+        // Create new
+        newGroupings.push({
+          id: `flight_${day}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          day,
+          flightNumber: flight,
+          teeTime: tee,
+          buggyNumber: buggy,
+          players: guestIds
+        });
+      }
+    }
+
+    // Clean up: Remove groupings with no players? 
+    // Maybe not, an empty flight might be desired. 
+    // But above I filtered generic ones. 
+
+    onUpdateGolfGroupings(newGroupings);
+    setSelectedGolfers([]); // Clear selection after action
+  };
+
   const sortedDatesFromSchedule = Array.from(new Set(schedules.map(s => s.date))).sort();
 
   const groupedSchedules = schedules.reduce((groups, item) => {
@@ -179,15 +245,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               </button>
               <button onClick={() => setEditingItem({ type: activeAdminTab, data: { id: `temp_${Date.now()}`, name: '', date: sortedDatesFromSchedule[0] || '' } })} className="bg-[#014227] text-[#FFD700] px-6 py-2.5 rounded-2xl text-xs font-black uppercase flex items-center gap-2 shadow-lg hover:bg-black transition"><Plus size={14} /><span>Add {activeAdminTab.slice(0, -1)}</span></button>
             </div>
+          ) : activeAdminTab === 'Golf' ? (
+            null
           ) : (
             <button onClick={() => {
               const baseData = { id: `temp_${Date.now()}`, name: '', date: sortedDatesFromSchedule[0] || '' };
-              if (activeAdminTab === 'Golf') {
-                setEditingItem({ type: 'Golf', data: { ...baseData, day: activeGolfDay, flightNumber: '', teeTime: '', players: [] } });
-              } else {
-                setEditingItem({ type: activeAdminTab, data: baseData });
-              }
-            }} className="bg-[#014227] text-[#FFD700] px-6 py-2.5 rounded-2xl text-xs font-black uppercase flex items-center gap-2 shadow-lg hover:bg-black transition"><Plus size={14} /><span>Add {activeAdminTab === 'Golf' ? (activeGolfDay === 1 ? 'Day 1 Flight' : 'Day 2 Flight') : activeAdminTab.slice(0, -1)}</span></button>
+              setEditingItem({ type: activeAdminTab, data: baseData });
+            }} className="bg-[#014227] text-[#FFD700] px-6 py-2.5 rounded-2xl text-xs font-black uppercase flex items-center gap-2 shadow-lg hover:bg-black transition"><Plus size={14} /><span>Add {activeAdminTab.slice(0, -1)}</span></button>
           )}
         </div>
       </div>
@@ -232,7 +296,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                 <thead className="bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
                   <tr>
                     <th className="px-8 py-4">Identity</th>
-                    <th className="px-8 py-4">Package & Group</th>
+                    <th className="px-8 py-4">Package</th>
                     <th className="px-8 py-4">Nation</th>
                     <th className="px-8 py-4 text-right">Actions</th>
                   </tr>
@@ -249,8 +313,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                         <div className="text-[10px] font-bold text-gray-400 uppercase">{guest.id} • {guest.gender}</div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="bg-[#014227] text-[#FFD700] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest mr-2">{guest.package}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">{guest.group}</span>
+                        <span className="bg-[#014227] text-[#FFD700] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">{guest.package}</span>
                       </td>
                       <td className="px-8 py-6">
                         <div className="text-[10px] font-black uppercase text-[#014227]">{guest.nation}</div>
@@ -400,92 +463,244 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       {activeAdminTab === 'Golf' && (
         <div className="space-y-6">
           <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
-            <div className="p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center">
+            <div className="p-8 bg-[#014227] text-[#FFD700] flex flex-col md:flex-row justify-between items-center gap-6">
               <div>
-                <h3 className="text-lg font-black uppercase tracking-widest">Golf Drive Groupings</h3>
+                <h3 className="text-lg font-black uppercase tracking-widest">Golf Registry - Day {activeGolfDay}</h3>
+                <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">Manage Flights & Buggies</p>
               </div>
+
               <div className="flex bg-[#00331f] p-1 rounded-xl">
-                <button
-                  onClick={() => setActiveGolfDay(1)}
-                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeGolfDay === 1 ? 'bg-[#FFD700] text-[#014227] shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                  Day 1
-                </button>
-                <button
-                  onClick={() => setActiveGolfDay(2)}
-                  className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeGolfDay === 2 ? 'bg-[#FFD700] text-[#014227] shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                  Day 2
-                </button>
+                <button onClick={() => setActiveGolfDay(1)} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeGolfDay === 1 ? 'bg-[#FFD700] text-[#014227] shadow-lg' : 'text-gray-400 hover:text-white'}`}>Day 1</button>
+                <button onClick={() => setActiveGolfDay(2)} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeGolfDay === 2 ? 'bg-[#FFD700] text-[#014227] shadow-lg' : 'text-gray-400 hover:text-white'}`}>Day 2</button>
               </div>
+            </div>
+
+            {/* Statistics Dashboard */}
+            {(() => {
+              const targetType = activeGolfDay === 1 ? 'Day1' : 'Day2';
+              // Calculate eligible golfers first
+              const validRuleIds = new Set<string>();
+              PACKAGE_CATEGORIES.forEach(cat => (categoryPermissions[cat] || []).forEach(p => { if (p.golfType === targetType) validRuleIds.add(p.id); }));
+
+              const eligible = guests.filter(g => {
+                if (!g.isGolfParticipant) return false;
+                const perms = packagePermissions[g.package]?.permissions || {};
+                return Object.keys(perms).some(pid => validRuleIds.has(pid));
+              });
+
+              const totalGolfers = eligible.length;
+              const maleCount = eligible.filter(g => g.gender === 'Male').length;
+              const femaleCount = eligible.filter(g => g.gender === 'Female').length;
+
+              // Flights
+              const dayFlights = golfGroupings.filter(g => g.day === activeGolfDay && g.flightNumber);
+              const totalFlights = new Set(dayFlights.map(g => g.flightNumber.toLowerCase())).size;
+
+              // By Country
+              const byNation: Record<string, number> = {};
+              eligible.forEach(g => {
+                byNation[g.nation] = (byNation[g.nation] || 0) + 1;
+              });
+              const sortedNations = Object.entries(byNation).sort((a, b) => b[1] - a[1]);
+
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-8 py-6 bg-gray-50 border-b border-gray-100">
+                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Flights</div>
+                    <div className="text-2xl font-black text-[#014227]">{totalFlights}</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Golfers</div>
+                    <div className="text-2xl font-black text-[#014227]">{totalGolfers} <span className="text-sm text-gray-400 font-bold ml-1">Pax</span></div>
+                  </div>
+                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gender Split</div>
+                    <div className="flex items-center gap-3">
+                      <div><span className="text-lg font-black text-[#014227]">{maleCount}</span> <span className="text-[9px] font-bold text-gray-400 uppercase">Male</span></div>
+                      <div className="w-px h-6 bg-gray-200"></div>
+                      <div><span className="text-lg font-black text-[#014227]">{femaleCount}</span> <span className="text-[9px] font-bold text-gray-400 uppercase">Female</span></div>
+                    </div>
+                  </div>
+                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Top Nations</div>
+                    <div className="flex flex-wrap gap-1.5 h-12 overflow-y-auto custom-scrollbar content-start">
+                      {sortedNations.map(([nation, count]) => (
+                        <span key={nation} className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[9px] font-bold uppercase">{nation} {count}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Batch Action Bar */}
+            <div className="bg-[#FFFBEB] p-4 border-b border-gray-100 flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="bg-[#014227] text-[#FFD700] w-6 h-6 rounded flex items-center justify-center text-[10px] font-black">{selectedGolfers.length}</div>
+                <span className="text-[10px] font-black text-[#014227] uppercase tracking-widest">Selected</span>
+              </div>
+              <div className="h-8 w-px bg-gray-300 mx-2"></div>
+
+              <input id="batchFlight" type="text" placeholder="Flight No." className="w-24 p-2 rounded-lg border border-gray-200 text-xs font-bold uppercase outline-none focus:border-[#014227]" />
+              <input id="batchTee" type="text" placeholder="Tee Time" className="w-24 p-2 rounded-lg border border-gray-200 text-xs font-bold uppercase outline-none focus:border-[#014227]" />
+              <input id="batchBuggy" type="text" placeholder="Buggy" className="w-24 p-2 rounded-lg border border-gray-200 text-xs font-bold uppercase outline-none focus:border-[#014227]" />
+
+              <button
+                onClick={() => {
+                  const f = (document.getElementById('batchFlight') as HTMLInputElement).value;
+                  const t = (document.getElementById('batchTee') as HTMLInputElement).value;
+                  const b = (document.getElementById('batchBuggy') as HTMLInputElement).value;
+                  handleGolfAssignment(selectedGolfers, activeGolfDay, f, t, b);
+                  // Clear inputs
+                  (document.getElementById('batchFlight') as HTMLInputElement).value = '';
+                  (document.getElementById('batchTee') as HTMLInputElement).value = '';
+                  (document.getElementById('batchBuggy') as HTMLInputElement).value = '';
+                }}
+                disabled={selectedGolfers.length === 0}
+                className="bg-[#014227] text-[#FFD700] px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Assign / Update
+              </button>
+              <button
+                onClick={() => handleGolfAssignment(selectedGolfers, activeGolfDay, '', '', '')}
+                disabled={selectedGolfers.length === 0}
+                className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition"
+              >
+                Clear Flight
+              </button>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
                   <tr>
-                    <th className="px-8 py-4">Flight Details</th>
-                    <th className="px-8 py-4">Players</th>
-                    <th className="px-8 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4 w-12 text-center">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-[#014227] focus:ring-[#014227]"
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const targetType = activeGolfDay === 1 ? 'Day1' : 'Day2';
+                            const validRuleIds = new Set<string>();
+                            PACKAGE_CATEGORIES.forEach(cat => (categoryPermissions[cat] || []).forEach(p => { if (p.golfType === targetType) validRuleIds.add(p.id); }));
+
+                            const allIds = guests.filter(g => {
+                              if (!g.isGolfParticipant) return false;
+                              const perms = packagePermissions[g.package]?.permissions || {};
+                              return Object.keys(perms).some(pid => validRuleIds.has(pid));
+                            }).map(g => g.id);
+                            setSelectedGolfers(allIds);
+                          } else {
+                            setSelectedGolfers([]);
+                          }
+                        }}
+                      />
+                    </th>
+                    <th className="px-6 py-4">Golfer</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Assigned Flight</th>
+                    <th className="px-6 py-4">Tee Time</th>
+                    <th className="px-6 py-4">Buggy</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {golfGroupings.filter(g => g.day === activeGolfDay).sort((a, b) => a.flightNumber.localeCompare(b.flightNumber)).map(group => (
-                    <tr key={group.id} className="hover:bg-gray-50 transition group">
-                      <td className="px-8 py-6">
-                        <div className="font-black text-[#014227] flex items-center gap-2">
-                          <Trophy size={14} className="text-[#FFD700]" />
-                          {group.flightNumber}
-                        </div>
-                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tight flex items-center gap-1.5 mt-1.5 ml-5">
-                          <Clock size={10} /> {group.teeTime}
-                          {group.buggyNumber && (
-                            <> • <span className="bg-[#FFD700] text-[#014227] px-2 py-0.5 rounded text-[8px]">Buggy {group.buggyNumber}</span></>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex -space-x-2">
-                          {group.players.map((pid, idx) => {
-                            const p = guests.find(g => g.id === pid);
-                            return (
-                              <div key={idx} className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[9px] font-black text-gray-500 first:bg-[#014227] first:text-[#FFD700]" title={p ? p.name : pid}>
-                                {idx + 1}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="text-[9px] font-bold text-gray-400 uppercase mt-2 pl-1">
-                          {group.players.map(pid => guests.find(g => g.id === pid)?.name).filter(Boolean).join(', ')}
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
-                        <div className="flex justify-end gap-2">
-                          <button onClick={() => setEditingItem({ type: 'Golf', data: group })} className="p-2.5 text-blue-600 bg-white border border-gray-100 rounded-xl shadow-sm hover:bg-blue-50 transition"><Edit3 size={14} /></button>
-                          <button
-                            onClick={() => {
-                              if (deleteConfirm?.id === group.id && deleteConfirm?.type === 'golf') {
-                                onUpdateGolfGroupings(golfGroupings.filter(g => g.id !== group.id));
-                                setDeleteConfirm(null);
-                              } else {
-                                setDeleteConfirm({ id: group.id, type: 'golf' });
-                              }
-                            }}
-                            className={`p-2 rounded-lg shadow-sm transition-all duration-200 ${deleteConfirm?.id === group.id && deleteConfirm?.type === 'golf' ? 'bg-orange-500 text-white scale-110' : 'text-red-500 bg-white border border-gray-100 hover:bg-red-50'}`}
-                          >
-                            {deleteConfirm?.id === group.id && deleteConfirm?.type === 'golf' ? <AlertTriangle size={12} /> : <Trash2 size={12} />}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {golfGroupings.filter(g => g.day === activeGolfDay).length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="px-8 py-12 text-center text-gray-400 font-bold uppercase text-xs tracking-widest border-dashed">
-                        No flights configured for Day {activeGolfDay}
-                      </td>
-                    </tr>
-                  )}
+                  {(() => {
+                    const targetType = activeGolfDay === 1 ? 'Day1' : 'Day2';
+                    // Recalculate rules
+                    const validRuleIds = new Set<string>();
+                    PACKAGE_CATEGORIES.forEach(cat => (categoryPermissions[cat] || []).forEach(p => { if (p.golfType === targetType) validRuleIds.add(p.id); }));
+
+                    const eligibleGuests = guests.filter(g => {
+                      if (!g.isGolfParticipant) return false;
+                      const perms = packagePermissions[g.package]?.permissions || {};
+                      return Object.keys(perms).some(pid => validRuleIds.has(pid));
+                    }).sort((a, b) => a.name.localeCompare(b.name));
+
+                    if (eligibleGuests.length === 0) return <tr><td colSpan={6} className="p-10 text-center text-gray-400 text-xs font-bold uppercase">No eligible golfers found for Day {activeGolfDay}</td></tr>;
+
+                    return eligibleGuests.map(g => {
+                      const group = golfGroupings.find(grp => grp.day === activeGolfDay && grp.players.includes(g.id));
+                      const isSelected = selectedGolfers.includes(g.id);
+
+                      return (
+                        <tr key={g.id} className={`hover:bg-gray-50 transition ${isSelected ? 'bg-amber-50/50' : ''}`}>
+                          <td className="px-6 py-4 text-center">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {
+                                if (isSelected) setSelectedGolfers(selectedGolfers.filter(id => id !== g.id));
+                                else setSelectedGolfers([...selectedGolfers, g.id]);
+                              }}
+                              className="rounded border-gray-300 text-[#014227] focus:ring-[#014227]"
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="font-black text-[#014227]">{g.name}</div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase">{g.package} • {g.nation}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {group ? (
+                              <span className="bg-[#014227] text-[#FFD700] px-2 py-1 rounded text-[9px] font-black uppercase">Assigned</span>
+                            ) : (
+                              <span className="bg-gray-100 text-gray-400 px-2 py-1 rounded text-[9px] font-black uppercase">Pending</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            {/* Inline Edit Flight */}
+                            <input
+                              type="text"
+                              defaultValue={group?.flightNumber || ''}
+                              onBlur={(e) => {
+                                if (e.target.value !== (group?.flightNumber || '')) {
+                                  handleGolfAssignment([g.id], activeGolfDay, e.target.value, group?.teeTime || '', group?.buggyNumber || '');
+                                }
+                              }}
+                              placeholder="-"
+                              className="w-20 bg-transparent border-b border-gray-200 py-1 text-xs font-bold uppercase focus:border-[#014227] outline-none transition"
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <input
+                              type="text"
+                              defaultValue={group?.teeTime || ''}
+                              onBlur={(e) => {
+                                if (e.target.value !== (group?.teeTime || '')) {
+                                  // If we change tee time, we might split the flight? 
+                                  // User requirement: "Batch set flight details".
+                                  // If I change tee time for ONE person in a group, logic should probably move them to a new group or update the whole group?
+                                  // My logic: `handleGolfAssignment` creates/merges. 
+                                  // If I pass existing flight number but NEW tee time...
+                                  // The logic `newGroupings[targetIndex] = ... teeTime: tee` UPDATES THE WHOLE FLIGHT.
+                                  // This is risky for inline edit if they just want to move one person.
+                                  // BUT `Batch set` implies modifying attributes.
+                                  // Let's assume Flight Number is the key grouping. Properties belong to Flight.
+                                  // So editing properties updates the FLIGHT.
+                                  handleGolfAssignment([g.id], activeGolfDay, group?.flightNumber || 'Unassigned', e.target.value, group?.buggyNumber || '');
+                                }
+                              }}
+                              placeholder="-"
+                              className="w-20 bg-transparent border-b border-gray-200 py-1 text-xs font-bold uppercase focus:border-[#014227] outline-none transition"
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <input
+                              type="text"
+                              defaultValue={group?.buggyNumber || ''}
+                              onBlur={(e) => {
+                                if (e.target.value !== (group?.buggyNumber || '')) {
+                                  handleGolfAssignment([g.id], activeGolfDay, group?.flightNumber || 'Unassigned', group?.teeTime || '', e.target.value);
+                                }
+                              }}
+                              placeholder="-"
+                              className="w-16 bg-transparent border-b border-gray-200 py-1 text-xs font-bold uppercase focus:border-[#014227] outline-none transition"
+                            />
+                          </td>
+                        </tr>
+                      );
+
+                    })
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -686,13 +901,30 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     <FormField label="Name on Tag" value={editingItem.data.nameOnTag} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, nameOnTag: v } })} />
                   </div>
                   <FormField label="Full Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} />
-                  <div className="grid grid-cols-3 gap-4">
-                    <FormField label="Gender" value={editingItem.data.gender} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, gender: v } })} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Gender</label>
+                      <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, gender: 'Male' } })}
+                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.gender === 'Male' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                          Male
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, gender: 'Female' } })}
+                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.gender === 'Female' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                          Female
+                        </button>
+                      </div>
+                    </div>
                     <FormField label="Position" value={editingItem.data.position} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, position: v } })} />
-                    <FormField label="Group" value={editingItem.data.group} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, group: v } })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Nation" value={editingItem.data.nation} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, nation: v } })} />
+                    <SelectField label="Nation" value={editingItem.data.nation} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, nation: v } })} options={NATIONS} />
                     <FormField label="Local Organisation" value={editingItem.data.localOrg} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, localOrg: v } })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -704,17 +936,44 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     <FormField label="Line" value={editingItem.data.lineID} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, lineID: v } })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Food Preference" value={editingItem.data.foodPreference} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, foodPreference: v } })} />
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Food Preference</label>
+                      <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, foodPreference: 'Non-Vegetarian' } })}
+                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.foodPreference !== 'Vegetarian' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                          Non-Veg
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, foodPreference: 'Vegetarian' } })}
+                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.foodPreference === 'Vegetarian' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                          Vegetarian
+                        </button>
+                      </div>
+                    </div>
                     <FormField label="Food/Medicine Allergy" value={editingItem.data.allergies} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, allergies: v } })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Package</label>
                       <select className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none" value={editingItem.data.package} onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, package: e.target.value } })}>
-                        {activePackageTypes.map(p => <option key={p} value={p}>{p}</option>)}
+                        <option value="">-- SELECT PACKAGE --</option>
+                        {PACKAGE_CATEGORIES.map(category => {
+                          const pkgs = activePackageTypes.filter(p => packagePermissions[p]?.category === category).sort();
+                          if (pkgs.length === 0) return null;
+                          return (
+                            <optgroup key={category} label={category}>
+                              {pkgs.map(p => <option key={p} value={p}>{p}</option>)}
+                            </optgroup>
+                          );
+                        })}
                       </select>
                     </div>
-                    <FormField label="T-Shirt Size" value={editingItem.data.tShirtSize} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, tShirtSize: v } })} />
+                    <SelectField label="T-Shirt Size" value={editingItem.data.tShirtSize} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, tShirtSize: v } })} options={TSHIRT_SIZES} />
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4">
                     <CheckboxField label="Golfer" checked={editingItem.data.isGolfParticipant} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, isGolfParticipant: v } })} />
@@ -777,53 +1036,77 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                       <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Assign Players</label>
                       <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">{(editingItem.data.players || []).length} Selected</span>
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Search golfers..."
-                      className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-[#FFD700]"
-                      onChange={(e) => {
-                        // We use a temp custom field on the editing item to store search query if needed, or just rely on global search. 
-                        // Actually, let's just show all relevant golfers for now, or filter by the main search query if that's available? 
-                        // No, let's just list them all scrollable. 
-                        // To keep it simple, I won't add a local search state here unless necessary. 
-                        // Let's rely on a filtered list.
-                      }}
-                      // Wait, I can't easily add local state here without Ref or creating a new component.
-                      // Let's just list all golfers sorted by name.
-                      disabled
-                      value="Search functionality coming soon (List below shows all golfers)"
-                    />
+
                     <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                      {guests.filter(g => g.isGolfParticipant).sort((a, b) => a.name.localeCompare(b.name)).map(g => (
-                        <label key={g.id} className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer hover:bg-gray-50 transition-all ${editingItem.data.players?.includes(g.id) ? 'bg-[#fffbeb] border-[#FFD700] ring-1 ring-[#FFD700]' : 'bg-white border-gray-100'}`}>
-                          <div onClick={(e) => {
-                            e.preventDefault();
-                            const currentPlayers = editingItem.data.players || [];
-                            const newPlayers = currentPlayers.includes(g.id)
-                              ? currentPlayers.filter(id => id !== g.id)
-                              : [...currentPlayers, g.id];
-                            setEditingItem({ ...editingItem, data: { ...editingItem.data, players: newPlayers } });
-                          }} className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${editingItem.data.players?.includes(g.id) ? 'bg-[#014227] text-[#FFD700]' : 'border border-gray-300'}`}>
-                            {editingItem.data.players?.includes(g.id) && <Check size={12} />}
-                          </div>
-                          <div className="flex-1">
-                            <div className="text-xs font-black text-[#014227]">{g.name}</div>
-                            <div className="text-[9px] font-bold text-gray-400 uppercase">{g.nation} • {g.handicap || 'HCP: -'}</div>
-                          </div>
-                        </label>
-                      ))}
+                      {(() => {
+                        const currentDay = editingItem.data.day || activeGolfDay;
+                        const targetType = currentDay === 1 ? 'Day1' : 'Day2';
+
+                        // 1. Calculate Valid Rule IDs
+                        const validRuleIds = new Set<string>();
+                        PACKAGE_CATEGORIES.forEach(cat => {
+                          const rules = categoryPermissions[cat] || [];
+                          rules.forEach(p => {
+                            if (p.golfType === targetType) validRuleIds.add(p.id);
+                          });
+                        });
+
+                        // 2. Filter Guests
+                        const eligibleGuests = guests.filter(g => {
+                          if (!g.isGolfParticipant) return false;
+
+                          // Check permissions
+                          const perms = packagePermissions[g.package]?.permissions || {};
+                          const hasPerm = Object.keys(perms).some(pid => validRuleIds.has(pid));
+                          if (!hasPerm) return false;
+
+                          // Check if assigned to another flight on same day
+                          const assigned = golfGroupings.some(group =>
+                            group.day === currentDay &&
+                            group.id !== editingItem.data.id &&
+                            group.players.includes(g.id)
+                          );
+                          if (assigned) return false;
+
+                          return true;
+                        }).sort((a, b) => a.name.localeCompare(b.name));
+
+                        // 3. Render
+                        if (eligibleGuests.length === 0) {
+                          return (
+                            <div className="text-center p-4 text-gray-400 text-[10px] font-bold uppercase">
+                              No eligible unassigned golfers found for Day {currentDay}
+                            </div>
+                          );
+                        }
+
+                        return eligibleGuests.map(g => {
+                          const isSelected = editingItem.data.players?.includes(g.id);
+                          return (
+                            <label key={g.id} className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer hover:bg-gray-50 transition-all ${isSelected ? 'bg-[#fffbeb] border-[#FFD700] ring-1 ring-[#FFD700]' : 'bg-white border-gray-100'}`}>
+                              <div
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const currentPlayers = editingItem.data.players || [];
+                                  const newPlayers = isSelected
+                                    ? currentPlayers.filter((id: string) => id !== g.id)
+                                    : [...currentPlayers, g.id];
+                                  setEditingItem({ ...editingItem, data: { ...editingItem.data, players: newPlayers } });
+                                }}
+                                className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${isSelected ? 'bg-[#014227] text-[#FFD700]' : 'border border-gray-300'}`}
+                              >
+                                {isSelected && <Check size={12} />}
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-xs font-black text-[#014227]">{g.name}</div>
+                                <div className="text-[9px] font-bold text-gray-400 uppercase">{g.nation} • {g.package}</div>
+                              </div>
+                            </label>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
-
-                  {/* Hidden field for day (default to active day if new) */}
-                  {!editingItem.data.id?.startsWith('temp_') ? null : (
-                    // If it's a new item, ensure day is set. We handle this by setting default data in the Add button, 
-                    // but here we can explicitly show it or just let it be.
-                    // I'll assume 'activeGolfDay' is passed or available? No, activeGolfDay is state in AdminPortal.
-                    // I can't access activeGolfDay easily inside the map unless I pass it or verify the data init.
-                    // The 'Add' button sets data including day, so we are good.
-                    null
-                  )}
                 </div>
               )}
               <div className="pt-6 border-t border-gray-100">
@@ -833,156 +1116,282 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div >
       )}
 
-      {isPermMetaModalOpen && (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="bg-white rounded-[40px] w-full max-w-md p-10 shadow-2xl">
-            <h3 className="text-xl font-black text-[#014227] mb-8 uppercase tracking-widest">{permMetaEditData.id ? 'Modify' : 'New'} {permMetaEditData.category} Rule</h3>
-            <form onSubmit={handleAddOrUpdatePermMeta} className="space-y-6">
-              <FormField label="Rule Label (e.g. Banquet)" value={permMetaEditData.name} onChange={v => setPermMetaEditData({ ...permMetaEditData, name: v })} />
-              <FormField label="Designated Day (e.g. 29 Mar)" value={permMetaEditData.date} onChange={v => setPermMetaEditData({ ...permMetaEditData, date: v })} />
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Linked Itinerary (Optional)</label>
-                <select
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none"
-                  value={permMetaEditData.linkedItinerary || ''}
-                  onChange={e => setPermMetaEditData({ ...permMetaEditData, linkedItinerary: e.target.value })}
-                >
-                  <option value="">No Linked Event</option>
-                  {schedules.map(s => (
-                    <option key={s.id} value={s.id}>{s.date} - {s.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-end space-x-4 pt-6">
-                <button type="button" onClick={() => setIsPermMetaModalOpen(false)} className="px-6 py-3 font-black text-[10px] uppercase text-gray-400">Back</button>
-                <button type="submit" className="bg-[#014227] text-[#FFD700] px-10 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transform active:scale-95">Save Rule</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {isPackageModalOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="bg-white rounded-[40px] w-full max-w-md p-10 shadow-2xl">
-            <h3 className="text-xl font-black text-[#014227] mb-8 uppercase tracking-widest">{packageEditData.oldName ? 'Edit' : 'Create'} Package</h3>
-            <form onSubmit={handleAddOrUpdatePackage} className="space-y-6">
-              <FormField label="Unique Code" value={packageEditData.newName} onChange={v => setPackageEditData({ ...packageEditData, newName: v })} placeholder="VVIP-FULL" />
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Market Category</label>
-                <select className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none" value={packageEditData.category} onChange={e => setPackageEditData({ ...packageEditData, category: e.target.value as PackageCategory })}>
-                  {PACKAGE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="flex justify-end space-x-4 pt-6">
-                <button type="button" onClick={() => setIsPackageModalOpen(false)} className="px-6 py-3 font-black text-[10px] uppercase text-gray-400">Cancel</button>
-                <button type="submit" className="bg-[#014227] text-[#FFD700] px-10 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transition transform active:scale-95">Verify & Commit</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {isPasteModalOpen && (
-        <div className="fixed inset-0 bg-[#014227]/90 backdrop-blur-xl z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-black uppercase tracking-tight">Bulk Import Attendees</h3>
-                <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mt-1">Paste TSV or CSV data with headers below</p>
-              </div>
-              <button onClick={() => setIsPasteModalOpen(false)} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition">
-                <X size={20} />
-              </button>
+      {
+        isPermMetaModalOpen && (
+          <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="bg-white rounded-[40px] w-full max-w-md p-10 shadow-2xl">
+              <h3 className="text-xl font-black text-[#014227] mb-8 uppercase tracking-widest">{permMetaEditData.id ? 'Modify' : 'New'} {permMetaEditData.category} Rule</h3>
+              <form onSubmit={handleAddOrUpdatePermMeta} className="space-y-6">
+                <FormField label="Rule Label (e.g. Banquet)" value={permMetaEditData.name} onChange={v => setPermMetaEditData({ ...permMetaEditData, name: v })} />
+                <FormField label="Designated Day (e.g. 29 Mar)" value={permMetaEditData.date} onChange={v => setPermMetaEditData({ ...permMetaEditData, date: v })} />
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Linked Itinerary (Optional)</label>
+                  <select
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none"
+                    value={permMetaEditData.linkedItinerary || ''}
+                    onChange={e => setPermMetaEditData({ ...permMetaEditData, linkedItinerary: e.target.value })}
+                  >
+                    <option value="">No Linked Event</option>
+                    {schedules.map(s => (
+                      <option key={s.id} value={s.id}>{s.date} - {s.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Golf Flag (For Auto-Loading)</label>
+                  <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1">
+                    <button
+                      type="button"
+                      onClick={() => setPermMetaEditData({ ...permMetaEditData, golfType: undefined })}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${!permMetaEditData.golfType ? 'bg-gray-200 text-gray-600' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      None
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPermMetaEditData({ ...permMetaEditData, golfType: 'Day1' })}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${permMetaEditData.golfType === 'Day1' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      Day 1 Golf
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPermMetaEditData({ ...permMetaEditData, golfType: 'Day2' })}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${permMetaEditData.golfType === 'Day2' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      Day 2 Golf
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-4 pt-6">
+                  <button type="button" onClick={() => setIsPermMetaModalOpen(false)} className="px-6 py-3 font-black text-[10px] uppercase text-gray-400">Back</button>
+                  <button type="submit" className="bg-[#014227] text-[#FFD700] px-10 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transform active:scale-95">Save Rule</button>
+                </div>
+              </form>
             </div>
-            <div className="p-8 space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Pasted Content</label>
-                <textarea
-                  className="w-full h-64 p-6 bg-gray-50 border border-gray-100 rounded-3xl font-mono text-xs outline-none focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all resize-none"
-                  placeholder="Guest ID&#9;Name on tag&#9;Name&#9;Nation...&#10;G001&#9;John&#9;John Doe&#9;USA..."
-                  value={pastedData}
-                  onChange={(e) => setPastedData(e.target.value)}
-                />
-              </div>
-              <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
-                <p className="text-[10px] font-bold text-amber-800 leading-relaxed uppercase tracking-wider text-[8px]">
-                  Tip: Ensure your columns include 'Guest ID' and 'Name'. Tabs or commas are both accepted.
-                </p>
-              </div>
-              <div className="flex justify-end space-x-4 pt-4">
-                <button
-                  onClick={() => { setIsPasteModalOpen(false); setPastedData(''); }}
-                  className="px-6 py-3 font-black text-[10px] uppercase text-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (!pastedData.trim()) return;
-                    try {
-                      const lines = pastedData.trim().split(/\r?\n/).filter(l => l.trim());
-                      if (lines.length < 2) throw new Error('No data rows found.');
+          </div >
+        )
+      }
 
-                      const firstLine = lines[0];
-                      const delimiter = firstLine.includes('\t') ? '\t' : ',';
-                      const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase());
-
-                      const newGuests = lines.slice(1).map((line, rowIdx) => {
-                        const values = line.split(delimiter).map(v => v.trim());
-                        const g: any = { checkInCount: 0, passportLast4: '' };
-
-                        headers.forEach((h, i) => {
-                          const val = values[i] || '';
-                          if (h.includes('guest id') || h === 'id') g.id = val;
-                          else if (h.includes('tag')) g.nameOnTag = val;
-                          else if (h.includes('name')) g.name = val;
-                          else if (h.includes('gender')) g.gender = val;
-                          else if (h.includes('position')) g.position = val;
-                          else if (h.includes('group')) g.group = val;
-                          else if (h.includes('nation')) g.nation = val;
-                          else if (h.includes('local org')) g.localOrg = val;
-                          else if (h.includes('senator')) g.senatorshipId = val;
-                          else if (h.includes('golfer')) g.isGolfParticipant = val.toLowerCase() === 'yes' || val === 'true';
-                          else if (h.includes('whatsapp')) g.whatsapp = val;
-                          else if (h.includes('line')) g.lineID = val;
-                          else if (h.includes('mail') || h.includes('email')) g.email = val;
-                          else if (h.includes('food preference')) g.foodPreference = val;
-                          else if (h.includes('allergy')) g.allergies = val;
-                          else if (h.includes('package')) g.package = val;
-                          else if (h.includes('t-shirt')) g.tShirtSize = val;
-                          else if (h.includes('single')) g.singleOccupancy = val.toLowerCase() === 'yes' || val === 'true';
-                          else if (h.includes('27 march')) g.additionalRoom27Mar = val.toLowerCase() === 'yes' || val === 'true';
-                          else if (h.includes('28 march')) g.additionalRoom28Mar = val.toLowerCase() === 'yes' || val === 'true';
-                        });
-
-                        if (!g.id || !g.name) return null;
-                        return g as Guest;
-                      }).filter(g => g !== null) as Guest[];
-
-                      if (newGuests.length === 0) throw new Error('Failed to parse any valid guest records.');
-
-                      onUpdateGuests([...guests, ...newGuests]);
-                      setIsPasteModalOpen(false);
-                      setPastedData('');
-                      window.alert(`Successfully imported ${newGuests.length} guests!`);
-                    } catch (err: any) {
-                      window.alert(`Import Failed: ${err.message}`);
-                    }
-                  }}
-                  className="bg-[#014227] text-[#FFD700] px-10 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transition transform active:scale-95"
-                >
-                  Import Data
-                </button>
-              </div>
+      {
+        isPackageModalOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="bg-white rounded-[40px] w-full max-w-md p-10 shadow-2xl">
+              <h3 className="text-xl font-black text-[#014227] mb-8 uppercase tracking-widest">{packageEditData.oldName ? 'Edit' : 'Create'} Package</h3>
+              <form onSubmit={handleAddOrUpdatePackage} className="space-y-6">
+                <FormField label="Unique Code" value={packageEditData.newName} onChange={v => setPackageEditData({ ...packageEditData, newName: v })} placeholder="VVIP-FULL" />
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Market Category</label>
+                  <select className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none" value={packageEditData.category} onChange={e => setPackageEditData({ ...packageEditData, category: e.target.value as PackageCategory })}>
+                    {PACKAGE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="flex justify-end space-x-4 pt-6">
+                  <button type="button" onClick={() => setIsPackageModalOpen(false)} className="px-6 py-3 font-black text-[10px] uppercase text-gray-400">Cancel</button>
+                  <button type="submit" className="bg-[#014227] text-[#FFD700] px-10 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transition transform active:scale-95">Verify & Commit</button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+
+      {
+        isPasteModalOpen && (
+          <div className="fixed inset-0 bg-[#014227]/90 backdrop-blur-xl z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]">
+              <div className="p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center shrink-0">
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight">Bulk Import Attendees</h3>
+                  <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mt-1">Paste TSV or CSV data with headers below</p>
+                </div>
+                <button onClick={() => { setIsPasteModalOpen(false); setPastedData(''); setImportResult(null); }} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {!importResult ? (
+                <div className="p-8 space-y-6 flex-1 overflow-auto">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Pasted Content</label>
+                    <textarea
+                      className="w-full h-64 p-6 bg-gray-50 border border-gray-100 rounded-3xl font-mono text-xs outline-none focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all resize-none"
+                      placeholder="Guest ID&#9;Name on tag&#9;Name&#9;Nation...&#10;G001&#9;John&#9;John Doe&#9;USA..."
+                      value={pastedData}
+                      onChange={(e) => setPastedData(e.target.value)}
+                    />
+                  </div>
+                  <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+                    <p className="text-[10px] font-bold text-amber-800 leading-relaxed uppercase tracking-wider text-[8px]">
+                      Tip: Ensure your columns include 'Guest ID' and 'Name'. Tabs or commas are both accepted.
+                    </p>
+                  </div>
+                  <div className="flex justify-end space-x-4 pt-4">
+                    <button
+                      onClick={() => { setIsPasteModalOpen(false); setPastedData(''); }}
+                      className="px-6 py-3 font-black text-[10px] uppercase text-gray-400"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!pastedData.trim()) return;
+                        const result = { total: 0, imported: 0, failed: [] as any[] };
+                        const validGuests: Guest[] = [];
+
+                        try {
+                          const lines = pastedData.trim().split(/\r?\n/).filter(l => l.trim());
+                          if (lines.length < 2) throw new Error('No data rows found.');
+
+                          const firstLine = lines[0];
+                          const delimiter = firstLine.includes('\t') ? '\t' : ',';
+                          const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase());
+
+                          result.total = lines.length - 1;
+
+                          lines.slice(1).forEach((line, rowIdx) => {
+                            try {
+                              const values = line.split(delimiter).map(v => v.trim());
+                              // Basic column count check (warn only)
+                              // if (values.length !== headers.length) throw new Error(`Column count mismatch (Expected ${headers.length}, got ${values.length})`);
+
+                              const g: any = { checkInCount: 0, passportLast4: '' };
+                              let hasId = false;
+                              let hasName = false;
+
+                              headers.forEach((h, i) => {
+                                const val = values[i] || '';
+                                if (h === 'id' || h === 'guest id' || h === 'guestid') { g.id = val; hasId = !!val; }
+                                else if (h.includes('tag')) g.nameOnTag = val;
+                                else if (h === 'name' || h === 'fullname' || h === 'full name') { g.name = val; hasName = !!val; }
+                                else if (h.includes('gender')) g.gender = val;
+                                else if (h.includes('position')) g.position = val;
+
+                                else if (h.includes('nation')) g.nation = val;
+                                else if (h.includes('local org')) g.localOrg = val;
+                                else if (h.includes('senator')) g.senatorshipId = val;
+                                else if (h.includes('golfer')) g.isGolfParticipant = val.toLowerCase() === 'yes' || val === 'true';
+                                else if (h.includes('whatsapp')) g.whatsapp = val;
+                                else if (h.includes('line')) g.lineID = val;
+                                else if (h.includes('mail') || h.includes('email')) g.email = val;
+                                else if (h.includes('food')) g.foodPreference = val;
+                                else if (h.includes('allergy')) g.allergies = val;
+                                else if (h.includes('package')) g.package = val;
+                                else if (h.includes('t-shirt')) g.tShirtSize = val;
+                                else if (h.includes('single')) g.singleOccupancy = val.toLowerCase() === 'yes' || val === 'true';
+                                else if (h.includes('27 march')) g.additionalRoom27Mar = val.toLowerCase() === 'yes' || val === 'true';
+                                else if (h.includes('28 march')) g.additionalRoom28Mar = val.toLowerCase() === 'yes' || val === 'true';
+                              });
+
+                              if (!hasId) throw new Error("Missing 'Guest ID'");
+                              if (!hasName) throw new Error("Missing 'Name'");
+
+                              // Check duplicates in existing 
+                              if (guests.find(existing => existing.id === g.id)) {
+                                // Optional: Allow update? For now, let's treat as OK (Update) or Error? 
+                                // User usually wants "Import" to mean Add/Update. 
+                                // Let's allow it but log it? 
+                                // Actually, let's treat success.
+                              }
+
+                              validGuests.push(g as Guest);
+                              result.imported++;
+
+                            } catch (rowErr: any) {
+                              result.failed.push({ row: rowIdx + 2, reason: rowErr.message, data: line });
+                            }
+                          });
+
+                          if (validGuests.length > 0) {
+                            // Merge with existing guests: Replace if ID exists, else add.
+                            const merged = [...guests];
+                            validGuests.forEach(newG => {
+                              const idx = merged.findIndex(ex => ex.id === newG.id);
+                              if (idx > -1) merged[idx] = { ...merged[idx], ...newG };
+                              else merged.push(newG);
+                            });
+                            onUpdateGuests(merged);
+                          }
+
+                          setImportResult(result);
+
+                        } catch (err: any) {
+                          window.alert(`Fatal Import Error: ${err.message}`);
+                        }
+                      }}
+                      className="bg-[#014227] text-[#FFD700] px-10 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transition transform active:scale-95"
+                    >
+                      Analyze & Import
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-col flex h-full overflow-hidden">
+                  <div className="p-8 pb-4 space-y-4 shrink-0 border-b border-gray-100">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-4 rounded-2xl ${importResult.failed.length === 0 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                        {importResult.failed.length === 0 ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-black text-[#014227]">Import Complete</h4>
+                        <p className="text-sm font-bold text-gray-400">Successfully processed <span className="text-[#014227]">{importResult.imported}</span> / {importResult.total} records.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-8 pt-4">
+                    {importResult.failed.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-[10px] font-black uppercase text-red-500 tracking-widest">Failures ({importResult.failed.length})</h5>
+                        </div>
+                        <div className="border border-red-100 rounded-3xl overflow-hidden">
+                          <table className="w-full text-left">
+                            <thead className="bg-red-50 text-[9px] font-black text-red-800 uppercase tracking-widest">
+                              <tr>
+                                <th className="px-6 py-3 w-16">Row</th>
+                                <th className="px-6 py-3 w-48">Reason</th>
+                                <th className="px-6 py-3">Raw Data</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-red-50">
+                              {importResult.failed.map((fail, i) => (
+                                <tr key={i} className="hover:bg-red-50/50">
+                                  <td className="px-6 py-3 text-[10px] font-bold text-red-900">{fail.row}</td>
+                                  <td className="px-6 py-3 text-[10px] font-bold text-red-600">{fail.reason}</td>
+                                  <td className="px-6 py-3 text-[9px] font-mono text-gray-500 truncate max-w-xs" title={fail.data}>{fail.data}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                        <CheckCircle2 size={48} className="text-green-500 mb-4" />
+                        <p className="font-black text-gray-400 uppercase tracking-widest">All records imported successfully</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-6 border-t border-gray-100 bg-gray-50 shrink-0 flex justify-end">
+                    <button
+                      onClick={() => { setIsPasteModalOpen(false); setPastedData(''); setImportResult(null); }}
+                      className="bg-[#014227] text-[#FFD700] px-8 py-3 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:gb-black transition"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

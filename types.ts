@@ -9,6 +9,7 @@ export interface PermissionMeta {
   name: string;
   date: string; // e.g., "28 Mar 2026"
   linkedItinerary?: string; // Optional: linked EventSchedule.id
+  golfType?: 'Day1' | 'Day2'; // Optional: explicit golf day flag
 }
 
 export type PackagePermissions = Record<PackageType, {
@@ -23,7 +24,7 @@ export interface Guest {
   name: string;
   gender: string;
   position: string;
-  group: string;
+
   nation: string;
   localOrg: string;
   senatorshipId?: string;
@@ -42,6 +43,16 @@ export interface Guest {
 
   // Existing internal/tracking fields
   passportLast4: string;
+  golfDay1?: {
+    flight: string;
+    teeTime: string;
+    buggy: string;
+  };
+  golfDay2?: {
+    flight: string;
+    teeTime: string;
+    buggy: string;
+  };
   golfTeeOff?: string;
   golfFlightNo?: string;
   golfBuggyNo?: string;
