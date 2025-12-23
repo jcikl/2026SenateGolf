@@ -1,0 +1,7 @@
+{
+  "name": "JCI KL Event Hub",
+  "description": "A comprehensive event management system for JCI Kuala Lumpur's international golf and conference event, featuring guest self-service, staff scanning, and admin controls.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
