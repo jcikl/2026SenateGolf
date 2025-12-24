@@ -35,7 +35,7 @@ const SelectField: React.FC<{ label: string; value: string; onChange: (v: string
   </div>
 );
 
-type AdminView = 'Attendees' | 'Itinerary' | 'Packages' | 'Travel' | 'Dining' | 'Golf';
+type AdminView = 'Attendees' | 'Itinerary' | 'Packages' | 'Nearby' | 'Golf';
 
 const AdminPortal: React.FC<AdminPortalProps> = ({
   guests, onUpdateGuests, schedules, onUpdateSchedules, onBulkSync, attractions, onUpdateAttractions, diningGuide, onUpdateDining, packagePermissions, onUpdatePackagePermissions, categoryPermissions, onUpdateCategoryPermissions, golfGroupings, onUpdateGolfGroupings
@@ -43,7 +43,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [activeAdminTab, setActiveAdminTab] = useState<AdminView>('Attendees');
   const [activeGolfDay, setActiveGolfDay] = useState<1 | 2>(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'package' | 'rule' | 'attendee' | 'itinerary' | 'travel' | 'dining' | 'golf' } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'package' | 'rule' | 'attendee' | 'itinerary' | 'nearby' | 'golf' } | null>(null);
 
   useEffect(() => {
     if (deleteConfirm) {
@@ -150,10 +150,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       onUpdateGuests(updatedGuests);
     } else if (type === 'Itinerary') {
       onUpdateSchedules(isNew ? [...schedules, finalData] : schedules.map(s => s.id === finalId ? finalData : s));
-    } else if (type === 'Travel') {
+    } else if (type === 'Nearby') {
       onUpdateAttractions(isNew ? [...attractions, finalData] : attractions.map(a => a.id === finalId ? finalData : a));
-    } else if (type === 'Dining') {
-      onUpdateDining(isNew ? [...diningGuide, finalData] : diningGuide.map(d => d.id === finalId ? finalData : d));
     } else if (type === 'Golf') {
       onUpdateGolfGroupings(isNew ? [...golfGroupings, finalData] : golfGroupings.map(g => g.id === finalId ? finalData : g));
     }
@@ -273,7 +271,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       </div>
 
       <div className="flex bg-white rounded-3xl p-1 shadow-xl border border-gray-100 overflow-x-auto">
-        {(['Attendees', 'Itinerary', 'Packages', 'Travel', 'Dining', 'Golf'] as AdminView[]).map(tab => (
+        {(['Attendees', 'Itinerary', 'Packages', 'Nearby', 'Golf'] as AdminView[]).map(tab => (
           <button key={tab} onClick={() => setActiveAdminTab(tab)} className={`flex-1 flex items-center justify-center space-x-2 py-3 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeAdminTab === tab ? 'bg-[#014227] text-[#FFD700] shadow-lg' : 'text-gray-400 hover:text-[#014227]'}`}>
             <span>{tab}</span>
           </button>
@@ -571,28 +569,28 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               const sortedNations = Object.entries(byNation).sort((a, b) => b[1] - a[1]);
 
               return (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-8 py-6 bg-gray-50 border-b border-gray-100">
-                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Flights</div>
-                    <div className="text-2xl font-black text-[#014227]">{totalFlights}</div>
+                <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4 px-4 md:px-8 py-6 bg-gray-50 border-b border-gray-100">
+                  <div className="bg-white p-3 md:p-4 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 truncate">Total Flights</div>
+                    <div className="text-xl md:text-2xl font-black text-[#014227]">{totalFlights}</div>
                   </div>
-                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Golfers</div>
-                    <div className="text-2xl font-black text-[#014227]">{totalGolfers} <span className="text-sm text-gray-400 font-bold ml-1">Pax</span></div>
+                  <div className="bg-white p-3 md:p-4 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 truncate">Total Golfers</div>
+                    <div className="text-xl md:text-2xl font-black text-[#014227]">{totalGolfers} <span className="hidden sm:inline text-sm text-gray-400 font-bold ml-1">Pax</span></div>
                   </div>
-                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gender Split</div>
-                    <div className="flex items-center gap-3">
-                      <div><span className="text-lg font-black text-[#014227]">{maleCount}</span> <span className="text-[9px] font-bold text-gray-400 uppercase">Male</span></div>
-                      <div className="w-px h-6 bg-gray-200"></div>
-                      <div><span className="text-lg font-black text-[#014227]">{femaleCount}</span> <span className="text-[9px] font-bold text-gray-400 uppercase">Female</span></div>
+                  <div className="bg-white p-3 md:p-4 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 truncate">Gender Split</div>
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div><span className="text-2xl md:text-2xl font-black text-[#014227]">{maleCount}</span> <span className="text-[7px] md:text-[9px] font-bold text-gray-400 uppercase">Male</span></div>
+                      <div className="w-px h-4 md:h-6 bg-gray-200"></div>
+                      <div><span className="text-2xl md:text-2xl font-black text-[#014227]">{femaleCount}</span> <span className="text-[7px] md:text-[9px] font-bold text-gray-400 uppercase">Female</span></div>
                     </div>
                   </div>
-                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Top Nations</div>
-                    <div className="flex flex-wrap gap-1.5 h-12 overflow-y-auto custom-scrollbar content-start">
+                  <div className="col-span-3 lg:col-span-1 bg-white p-3 md:p-4 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Top Nations</div>
+                    <div className="flex flex-wrap gap-1.5 h-auto lg:h-12 overflow-y-auto custom-scrollbar content-start">
                       {sortedNations.map(([nation, count]) => (
-                        <span key={nation} className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[9px] font-bold uppercase">{nation} {count}</span>
+                        <span key={nation} className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase">{nation} {count}</span>
                       ))}
                     </div>
                   </div>
@@ -601,43 +599,144 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
             })()}
 
             {/* Batch Action Bar */}
-            <div className="bg-[#FFFBEB] p-4 border-b border-gray-100 flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="bg-[#014227] text-[#FFD700] w-6 h-6 rounded flex items-center justify-center text-[10px] font-black">{selectedGolfers.length}</div>
-                <span className="text-[10px] font-black text-[#014227] uppercase tracking-widest">Selected</span>
+            <div className="bg-[#FFFBEB] p-4 border-b border-gray-100">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="bg-[#014227] text-[#FFD700] w-6 h-6 rounded flex items-center justify-center text-[10px] font-black">{selectedGolfers.length}</div>
+                  <span className="text-[10px] font-black text-[#014227] uppercase tracking-widest whitespace-nowrap">Selected</span>
+                </div>
+
+                <div className="hidden md:block h-8 w-px bg-gray-300 mx-2"></div>
+
+                <div className="grid grid-cols-3 gap-2 flex-grow">
+                  <input id="batchFlight" type="text" placeholder="Flight" className="w-full p-2.5 rounded-lg border border-gray-200 text-xs font-bold uppercase outline-none focus:border-[#014227] bg-white text-center" />
+                  <input id="batchTee" type="text" placeholder="Tee" className="w-full p-2.5 rounded-lg border border-gray-200 text-xs font-bold uppercase outline-none focus:border-[#014227] bg-white text-center" />
+                  <input id="batchBuggy" type="text" placeholder="Buggy" className="w-full p-2.5 rounded-lg border border-gray-200 text-xs font-bold uppercase outline-none focus:border-[#014227] bg-white text-center" />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const f = (document.getElementById('batchFlight') as HTMLInputElement).value;
+                      const t = (document.getElementById('batchTee') as HTMLInputElement).value;
+                      const b = (document.getElementById('batchBuggy') as HTMLInputElement).value;
+                      handleGolfAssignment(selectedGolfers, activeGolfDay, f, t, b);
+                      // Clear inputs
+                      (document.getElementById('batchFlight') as HTMLInputElement).value = '';
+                      (document.getElementById('batchTee') as HTMLInputElement).value = '';
+                      (document.getElementById('batchBuggy') as HTMLInputElement).value = '';
+                    }}
+                    disabled={selectedGolfers.length === 0}
+                    className="flex-grow bg-[#014227] text-[#FFD700] px-4 py-3 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    Assign / Update
+                  </button>
+                  <button
+                    onClick={() => handleGolfAssignment(selectedGolfers, activeGolfDay, '', '', '')}
+                    disabled={selectedGolfers.length === 0}
+                    className="text-red-500 hover:bg-red-50 px-4 py-3 rounded-xl text-[10px] font-black uppercase transition border border-red-100 md:border-transparent"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
-              <div className="h-8 w-px bg-gray-300 mx-2"></div>
-
-              <input id="batchFlight" type="text" placeholder="Flight No." className="w-24 p-2 rounded-lg border border-gray-200 text-xs font-bold uppercase outline-none focus:border-[#014227]" />
-              <input id="batchTee" type="text" placeholder="Tee Time" className="w-24 p-2 rounded-lg border border-gray-200 text-xs font-bold uppercase outline-none focus:border-[#014227]" />
-              <input id="batchBuggy" type="text" placeholder="Buggy" className="w-24 p-2 rounded-lg border border-gray-200 text-xs font-bold uppercase outline-none focus:border-[#014227]" />
-
-              <button
-                onClick={() => {
-                  const f = (document.getElementById('batchFlight') as HTMLInputElement).value;
-                  const t = (document.getElementById('batchTee') as HTMLInputElement).value;
-                  const b = (document.getElementById('batchBuggy') as HTMLInputElement).value;
-                  handleGolfAssignment(selectedGolfers, activeGolfDay, f, t, b);
-                  // Clear inputs
-                  (document.getElementById('batchFlight') as HTMLInputElement).value = '';
-                  (document.getElementById('batchTee') as HTMLInputElement).value = '';
-                  (document.getElementById('batchBuggy') as HTMLInputElement).value = '';
-                }}
-                disabled={selectedGolfers.length === 0}
-                className="bg-[#014227] text-[#FFD700] px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                Assign / Update
-              </button>
-              <button
-                onClick={() => handleGolfAssignment(selectedGolfers, activeGolfDay, '', '', '')}
-                disabled={selectedGolfers.length === 0}
-                className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition"
-              >
-                Clear Flight
-              </button>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile Cards View */}
+            <div className="md:hidden p-4 space-y-3 bg-gray-50/50">
+              {(() => {
+                const targetType = activeGolfDay === 1 ? 'Day1' : 'Day2';
+                const validRuleIds = new Set<string>();
+                PACKAGE_CATEGORIES.forEach(cat => (categoryPermissions[cat] || []).forEach(p => { if (p.golfType === targetType) validRuleIds.add(p.id); }));
+
+                const eligibleGuests = guests.filter(g => {
+                  if (!g.isGolfParticipant) return false;
+                  const perms = packagePermissions[g.package]?.permissions || {};
+                  return Object.keys(perms).some(pid => validRuleIds.has(pid));
+                }).sort((a, b) => a.name.localeCompare(b.name));
+
+                if (eligibleGuests.length === 0) return <div className="p-10 text-center text-gray-400 text-xs font-bold uppercase">No eligible golfers found</div>;
+
+                return eligibleGuests.map(g => {
+                  const group = golfGroupings.find(grp => grp.day === activeGolfDay && grp.players.includes(g.id));
+                  const isSelected = selectedGolfers.includes(g.id);
+
+                  return (
+                    <div key={g.id} className={`bg-white rounded-[24px] p-5 shadow-sm border ${isSelected ? 'border-[#FFD700] ring-1 ring-[#FFD700]' : 'border-gray-100'} transition-all`}>
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            if (isSelected) setSelectedGolfers(selectedGolfers.filter(id => id !== g.id));
+                            else setSelectedGolfers([...selectedGolfers, g.id]);
+                          }}
+                          className="mt-1 rounded border-gray-300 text-[#014227] focus:ring-[#014227]"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-1">
+                            <div className="font-black text-[#014227] text-sm truncate pr-2">{g.name}</div>
+                            {group ? (
+                              <span className="bg-[#014227] text-[#FFD700] px-2 py-0.5 rounded text-[8px] font-black uppercase whitespace-nowrap">Assigned</span>
+                            ) : (
+                              <span className="bg-gray-100 text-gray-400 px-2 py-0.5 rounded text-[8px] font-black uppercase whitespace-nowrap">Pending</span>
+                            )}
+                          </div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">{g.package} • {g.nation}</div>
+
+                          <div className="mt-4 grid grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-[8px] font-black uppercase text-gray-400">Flight</label>
+                              <input
+                                type="text"
+                                defaultValue={group?.flightNumber || ''}
+                                onBlur={(e) => {
+                                  if (e.target.value !== (group?.flightNumber || '')) {
+                                    handleGolfAssignment([g.id], activeGolfDay, e.target.value, group?.teeTime || '', group?.buggyNumber || '');
+                                  }
+                                }}
+                                placeholder="-"
+                                className="w-full bg-gray-50 border-b border-gray-200 py-2 text-[10px] font-black text-[#014227] uppercase text-center focus:border-[#014227] outline-none rounded-lg"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[8px] font-black uppercase text-gray-400">Tee Time</label>
+                              <input
+                                type="text"
+                                defaultValue={group?.teeTime || ''}
+                                onBlur={(e) => {
+                                  if (e.target.value !== (group?.teeTime || '')) {
+                                    handleGolfAssignment([g.id], activeGolfDay, group?.flightNumber || 'Unassigned', e.target.value, group?.buggyNumber || '');
+                                  }
+                                }}
+                                placeholder="-"
+                                className="w-full bg-gray-50 border-b border-gray-200 py-2 text-[10px] font-black text-[#014227] uppercase text-center focus:border-[#014227] outline-none rounded-lg"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[8px] font-black uppercase text-gray-400">Buggy</label>
+                              <input
+                                type="text"
+                                defaultValue={group?.buggyNumber || ''}
+                                onBlur={(e) => {
+                                  if (e.target.value !== (group?.buggyNumber || '')) {
+                                    handleGolfAssignment([g.id], activeGolfDay, group?.flightNumber || 'Unassigned', group?.teeTime || '', e.target.value);
+                                  }
+                                }}
+                                placeholder="-"
+                                className="w-full bg-gray-50 border-b border-gray-200 py-2 text-[10px] font-black text-[#014227] uppercase text-center focus:border-[#014227] outline-none rounded-lg"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              })()}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
                   <tr>
@@ -733,16 +832,6 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                               defaultValue={group?.teeTime || ''}
                               onBlur={(e) => {
                                 if (e.target.value !== (group?.teeTime || '')) {
-                                  // If we change tee time, we might split the flight? 
-                                  // User requirement: "Batch set flight details".
-                                  // If I change tee time for ONE person in a group, logic should probably move them to a new group or update the whole group?
-                                  // My logic: `handleGolfAssignment` creates/merges. 
-                                  // If I pass existing flight number but NEW tee time...
-                                  // The logic `newGroupings[targetIndex] = ... teeTime: tee` UPDATES THE WHOLE FLIGHT.
-                                  // This is risky for inline edit if they just want to move one person.
-                                  // BUT `Batch set` implies modifying attributes.
-                                  // Let's assume Flight Number is the key grouping. Properties belong to Flight.
-                                  // So editing properties updates the FLIGHT.
                                   handleGolfAssignment([g.id], activeGolfDay, group?.flightNumber || 'Unassigned', e.target.value, group?.buggyNumber || '');
                                 }
                               }}
@@ -875,17 +964,57 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
-      {activeAdminTab === 'Travel' && (
+      {activeAdminTab === 'Nearby' && (
         <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
           <div className="p-8 bg-[#014227] text-[#FFD700]">
-            <h3 className="text-lg font-black uppercase tracking-widest">Travel Attractions</h3>
-            <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{attractions.length} Attractions</p>
+            <h3 className="text-lg font-black uppercase tracking-widest">Nearby Places</h3>
+            <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{attractions.length} Locations Listing</p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="md:hidden p-4 space-y-4 bg-gray-50/50">
+            {attractions.map(attraction => (
+              <div key={attraction.id} className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 relative group">
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <button onClick={() => setEditingItem({ type: 'Nearby', data: attraction })} className="p-2 text-blue-600 bg-gray-50 rounded-xl hover:bg-blue-50">
+                    <Edit3 size={14} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (deleteConfirm?.id === attraction.id && deleteConfirm?.type === 'nearby') {
+                        onUpdateAttractions(attractions.filter(a => a.id !== attraction.id));
+                        setDeleteConfirm(null);
+                      } else {
+                        setDeleteConfirm({ id: attraction.id, type: 'nearby' });
+                      }
+                    }}
+                    className={`p-2 rounded-xl transition-all ${deleteConfirm?.id === attraction.id && deleteConfirm?.type === 'nearby' ? 'bg-orange-500 text-white' : 'text-red-500 bg-gray-50'}`}
+                  >
+                    {deleteConfirm?.id === attraction.id && deleteConfirm?.type === 'nearby' ? <AlertTriangle size={14} /> : <Trash2 size={14} />}
+                  </button>
+                </div>
+
+                <div className="pr-16 mb-2">
+                  <h4 className="font-black text-[#014227] text-lg leading-tight">{attraction.name}</h4>
+                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{attraction.id}</div>
+                </div>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-[9px] font-black uppercase">{attraction.dist}</span>
+                </div>
+
+                <div className="mt-4 text-xs text-gray-600 leading-relaxed line-clamp-3">
+                  {attraction.desc}
+                </div>
+              </div>
+            ))}
+            {attractions.length === 0 && (
+              <div className="text-center p-10 text-gray-400 text-xs font-bold uppercase">No attractions found</div>
+            )}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
                 <tr>
-                  <th className="px-8 py-4">Attraction</th>
+                  <th className="px-8 py-4">Location</th>
                   <th className="px-8 py-4">Distance</th>
                   <th className="px-8 py-4">Description</th>
                   <th className="px-8 py-4 text-right">Actions</th>
@@ -906,19 +1035,19 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     </td>
                     <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => setEditingItem({ type: 'Travel', data: attraction })} className="p-2 text-blue-600 bg-white border border-gray-100 rounded-lg shadow-sm hover:bg-blue-50"><Edit3 size={12} /></button>
+                        <button onClick={() => setEditingItem({ type: 'Nearby', data: attraction })} className="p-2 text-blue-600 bg-white border border-gray-100 rounded-lg shadow-sm hover:bg-blue-50"><Edit3 size={12} /></button>
                         <button
                           onClick={() => {
-                            if (deleteConfirm?.id === attraction.id && deleteConfirm?.type === 'travel') {
+                            if (deleteConfirm?.id === attraction.id && deleteConfirm?.type === 'nearby') {
                               onUpdateAttractions(attractions.filter(a => a.id !== attraction.id));
                               setDeleteConfirm(null);
                             } else {
-                              setDeleteConfirm({ id: attraction.id, type: 'travel' });
+                              setDeleteConfirm({ id: attraction.id, type: 'nearby' });
                             }
                           }}
-                          className={`p-2 rounded-lg shadow-sm transition-all duration-200 ${deleteConfirm?.id === attraction.id && deleteConfirm?.type === 'travel' ? 'bg-orange-500 text-white scale-110' : 'text-red-500 bg-white border border-gray-100 hover:bg-red-50'}`}
+                          className={`p-2 rounded-lg shadow-sm transition-all duration-200 ${deleteConfirm?.id === attraction.id && deleteConfirm?.type === 'nearby' ? 'bg-orange-500 text-white scale-110' : 'text-red-500 bg-white border border-gray-100 hover:bg-red-50'}`}
                         >
-                          {deleteConfirm?.id === attraction.id && deleteConfirm?.type === 'travel' ? <AlertTriangle size={12} /> : <Trash2 size={12} />}
+                          {deleteConfirm?.id === attraction.id && deleteConfirm?.type === 'nearby' ? <AlertTriangle size={12} /> : <Trash2 size={12} />}
                         </button>
                       </div>
                     </td>
@@ -930,66 +1059,14 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
-      {activeAdminTab === 'Dining' && (
-        <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
-          <div className="p-8 bg-[#014227] text-[#FFD700]">
-            <h3 className="text-lg font-black uppercase tracking-widest">Dining Guide</h3>
-            <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{diningGuide.length} Recommendations</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
-                <tr>
-                  <th className="px-8 py-4">Restaurant</th>
-                  <th className="px-8 py-4">Type</th>
-                  <th className="px-8 py-4">Description</th>
-                  <th className="px-8 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {diningGuide.map(dining => (
-                  <tr key={dining.id} className="hover:bg-gray-50 transition group">
-                    <td className="px-8 py-6">
-                      <div className="font-black text-[#014227]">{dining.name}</div>
-                      <div className="text-[10px] font-bold text-gray-400 uppercase">{dining.id}</div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-[9px] font-black uppercase">{dining.type}</span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="text-sm text-gray-600 max-w-md">{dining.desc}</div>
-                    </td>
-                    <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => setEditingItem({ type: 'Dining', data: dining })} className="p-2 text-blue-600 bg-white border border-gray-100 rounded-lg shadow-sm hover:bg-blue-50"><Edit3 size={12} /></button>
-                        <button
-                          onClick={() => {
-                            if (deleteConfirm?.id === dining.id && deleteConfirm?.type === 'dining') {
-                              onUpdateDining(diningGuide.filter(d => d.id !== dining.id));
-                              setDeleteConfirm(null);
-                            } else {
-                              setDeleteConfirm({ id: dining.id, type: 'dining' });
-                            }
-                          }}
-                          className={`p-2 rounded-lg shadow-sm transition-all duration-200 ${deleteConfirm?.id === dining.id && deleteConfirm?.type === 'dining' ? 'bg-orange-500 text-white scale-110' : 'text-red-500 bg-white border border-gray-100 hover:bg-red-50'}`}
-                        >
-                          {deleteConfirm?.id === dining.id && deleteConfirm?.type === 'dining' ? <AlertTriangle size={12} /> : <Trash2 size={12} />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {editingItem && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-[40px] w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl border-4 border-[#014227]">
             <div className="bg-[#014227] p-8 text-[#FFD700] border-b border-[#FFD700]/30 flex justify-between items-center">
-              <h3 className="text-xl font-black uppercase tracking-widest">{editingItem.data.id?.startsWith('temp_') ? 'Add' : 'Edit'} {editingItem.type.slice(0, -1)}</h3>
+              <h3 className="text-xl font-black uppercase tracking-widest">
+                {editingItem.data.id?.startsWith('temp_') ? 'Add' : 'Edit'} {editingItem.type === 'Nearby' ? 'Nearby Spot' : editingItem.type.slice(0, -1)}
+              </h3>
               <button onClick={() => setEditingItem(null)} className="hover:rotate-90 transition-transform"><X size={24} /></button>
             </div>
             <form onSubmit={handleSaveItem} className="p-8 space-y-6 overflow-y-auto bg-white">
@@ -1091,35 +1168,31 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                   <FormField label="Event Heading" value={editingItem.data.title} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, title: v } })} />
                 </>
               )}
-              {editingItem.type === 'Travel' && (
+              {editingItem.type === 'Nearby' && (
                 <>
-                  <FormField label="Attraction Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} />
-                  <FormField label="Distance" value={editingItem.data.dist} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, dist: v } })} placeholder="e.g. 3.5km" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Attraction Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} />
+                    <FormField label="Type" value={editingItem.data.type} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, type: v } })} placeholder="e.g. Landmark, Park" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Distance" value={editingItem.data.dist} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, dist: v } })} placeholder="e.g. 3.5km" />
+                    <FormField label="Phone" value={editingItem.data.phone} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, phone: v } })} placeholder="+60..." />
+                  </div>
+                  <FormField label="Address" value={editingItem.data.address} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, address: v } })} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Opening Hours" value={editingItem.data.hours} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, hours: v } })} placeholder="9:00 AM - 6:00 PM" />
+                    <FormField label="Website" value={editingItem.data.website} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, website: v } })} placeholder="https://..." />
+                  </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Description</label>
                     <textarea
                       className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all resize-none"
-                      rows={3}
+                      rows={2}
                       value={editingItem.data.desc || ''}
                       onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, desc: e.target.value } })}
                     />
                   </div>
-                  <FormField label="Image URL" value={editingItem.data.img} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, img: v } })} placeholder="https://..." />
-                </>
-              )}
-              {editingItem.type === 'Dining' && (
-                <>
-                  <FormField label="Restaurant Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} />
-                  <FormField label="Type" value={editingItem.data.type} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, type: v } })} placeholder="e.g. Street Food, Fine Dining" />
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Description</label>
-                    <textarea
-                      className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all resize-none"
-                      rows={3}
-                      value={editingItem.data.desc || ''}
-                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, desc: e.target.value } })}
-                    />
-                  </div>
+                  <FormField label="Navigation URL (Google Maps)" value={editingItem.data.img} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, img: v } })} placeholder="https://maps.google.com/..." />
                 </>
               )}
               {editingItem.type === 'Golf' && (
