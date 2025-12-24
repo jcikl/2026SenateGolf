@@ -15,7 +15,7 @@ interface StaffPortalProps {
 }
 
 const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, schedules, packagePermissions, categoryPermissions }) => {
-  const [activeTab, setActiveTab] = useState<'Scan' | 'History' | 'Statistics'>('Scan');
+  const [activeTab, setActiveTab] = useState<'Scan' | 'History' | 'Stats'>('Scan');
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedGuest, setScannedGuest] = useState<Guest | null>(null);
   const [showResult, setShowResult] = useState<{ status: 'success' | 'denied'; message: string } | null>(null);
@@ -115,25 +115,26 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
       return;
     }
 
-    // Check for duplicate check-in
-    const alreadyCheckedIn = scannedGuest.checkedInEvents?.includes(selectedEventId);
-    if (alreadyCheckedIn) {
-      setShowResult({
-        status: 'denied',
-        message: `DUPLICATE CHECK-IN: ${scannedGuest.name} has already checked in to "${selectedEvent?.title}".`
-      });
-      setTimeout(() => { setShowResult(null); setScannedGuest(null); }, 3000);
+    if (scannedGuest.checkedInEvents && scannedGuest.checkedInEvents[selectedEventId]) {
+      const time = new Date(scannedGuest.checkedInEvents[selectedEventId]).toLocaleTimeString();
+      alert(`GUEST ALREADY CHECKED IN to this event at ${time}`);
       return;
     }
 
-    const updated = guests.map(g =>
-      g.id === scannedGuest.id ? {
-        ...g,
-        checkInCount: g.checkInCount + 1,
-        checkedInAt: new Date().toLocaleString(),
-        checkedInEvents: [...(g.checkedInEvents || []), selectedEventId]
-      } : g
-    );
+    const updated = guests.map(g => {
+      if (g.id === scannedGuest.id) {
+        const newCheckedInEvents = { ...g.checkedInEvents, [selectedEventId]: new Date().toISOString() };
+        return {
+          ...g,
+          checkInCount: g.checkInCount + 1,
+          checkedInAt: new Date().toLocaleString(),
+          lastCheckedInEvent: selectedEventId,
+          checkedInEvents: newCheckedInEvents
+        };
+      }
+      return g;
+    });
+
     localStorage.setItem('lastScannedId', scannedGuest.id);
     onUpdateGuests(updated);
     setShowResult({ status: 'success', message: 'Verification Success - Access Granted.' });
@@ -178,10 +179,51 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
         <button onClick={() => setActiveTab('History')} className={`flex-1 flex items-center justify-center space-x-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'History' ? 'bg-[#014227] text-[#FFD700] shadow-2xl' : 'text-gray-400'}`}>
           <History size={20} /><span>Recent Logs</span>
         </button>
-        <button onClick={() => setActiveTab('Statistics')} className={`flex-1 flex items-center justify-center space-x-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'Statistics' ? 'bg-[#014227] text-[#FFD700] shadow-2xl' : 'text-gray-400'}`}>
-          <Trophy size={20} /><span>Statistics</span>
+        <button onClick={() => setActiveTab('Stats')} className={`flex-1 flex items-center justify-center space-x-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'Stats' ? 'bg-[#014227] text-[#FFD700] shadow-2xl' : 'text-gray-400'}`}>
+          <CheckCircle size={20} /><span>Statistics</span>
         </button>
       </div>
+
+      {activeTab === 'Stats' && (
+        <div className="bg-white rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
+          <div className="p-8 border-b border-gray-100 bg-gray-50">
+            <h3 className="text-xl font-black text-[#014227] uppercase tracking-widest">Event Check-in Statistics</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-[#FFFBEB] text-[11px] font-black text-[#014227] uppercase tracking-widest">
+                <tr>
+                  <th className="px-8 py-5">Date</th>
+                  <th className="px-8 py-5">Time</th>
+                  <th className="px-8 py-5">Event</th>
+                  <th className="px-8 py-5 text-right">Check-in Count</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {sortedDates.map(date => (
+                  <React.Fragment key={date}>
+                    {groupedSchedules[date].map(s => {
+                      const count = guests.filter(g => g.checkedInEvents && g.checkedInEvents[s.id]).length;
+                      return (
+                        <tr key={s.id} className="hover:bg-gray-50 transition">
+                          <td className="px-8 py-5 text-[11px] font-bold text-gray-500">{s.date}</td>
+                          <td className="px-8 py-5 text-[11px] font-bold text-gray-500">{s.time}</td>
+                          <td className="px-8 py-5 text-sm font-black text-[#014227]">{s.title}</td>
+                          <td className="px-8 py-5 text-right">
+                            <span className={`px-4 py-1 rounded-full text-xs font-black ${count > 0 ? 'bg-[#014227] text-[#FFD700]' : 'bg-gray-100 text-gray-400'}`}>
+                              {count}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'Scan' ? (
         <div className="space-y-6">
@@ -306,8 +348,8 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
               <thead className="bg-[#FFFBEB] text-[11px] font-black text-[#014227] uppercase tracking-widest"><tr><th className="px-10 py-5">Delegate Identity</th><th className="px-10 py-5">Station Log</th><th className="px-10 py-5">Timestamp</th></tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {guests
-                  .filter(g => g.checkedInEvents && g.checkedInEvents.length > 0)
-                  .filter(g => !logFilterEventId || g.checkedInEvents?.includes(logFilterEventId))
+                  .filter(g => g.checkedInAt)
+                  .filter(g => !logFilterEventId || g.lastCheckedInEvent === logFilterEventId)
                   .sort((a, b) => (b.checkedInAt || '').localeCompare(a.checkedInAt || ''))
                   .map(g => (
                     <tr key={g.id} className="hover:bg-gray-50 transition group">
@@ -316,12 +358,7 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
                         <div className="text-[10px] text-gray-400 font-bold uppercase">{g.id} • {g.package}</div>
                       </td>
                       <td className="px-10 py-7 text-xs font-black text-gray-600 uppercase tracking-tighter">
-                        {g.checkedInEvents?.map(eventId => {
-                          const evt = schedules.find(s => s.id === eventId);
-                          return (
-                            <div key={eventId} className="mb-1">{evt?.title || 'Unknown Event'}</div>
-                          );
-                        })}
+                        {g.lastCheckedInEvent ? schedules.find(s => s.id === g.lastCheckedInEvent)?.title || 'Access Verified' : 'Access Verified'}
                       </td>
                       <td className="px-10 py-7 text-[11px] font-mono text-gray-400 font-bold">{g.checkedInAt}</td>
                     </tr>
@@ -330,42 +367,7 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
             </table>
           </div>
         </div>
-      ) : activeTab === 'Statistics' ? (
-      <div className="bg-white rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 p-8">
-        <h2 className="text-xl font-black text-[#014227] uppercase tracking-widest mb-6">Event Check-in Statistics</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedDates.map(date => (
-            <div key={date} className="space-y-4">
-              <h3 className="text-sm font-black text-[#FFD700] uppercase tracking-widest border-b border-gray-100 pb-2">{date}</h3>
-              {groupedSchedules[date].map(s => {
-                const checkInCount = guests.filter(g => g.checkedInEvents?.includes(s.id)).length;
-                const totalGuests = guests.length;
-                const percentage = totalGuests > 0 ? Math.round((checkInCount / totalGuests) * 100) : 0;
-
-                return (
-                  <div key={s.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <div className="text-[10px] font-bold text-gray-400 uppercase">{s.time}</div>
-                        <div className="text-xs font-black text-[#014227] uppercase leading-tight mt-1">{s.title}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-black text-[#014227]">{checkInCount}</div>
-                        <div className="text-[8px] font-bold text-gray-400 uppercase">Check-ins</div>
-                      </div>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2 overflow-hidden">
-                      <div className="bg-[#014227] h-full rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
-                    </div>
-                    <div className="text-[8px] font-bold text-gray-400 uppercase text-right mt-1">{percentage}% Attendance</div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-      ) : null}
+      )}
       <style>{`
         @keyframes scan-line { 0% { top: 10%; opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { top: 90%; opacity: 0; } }
         .animate-scan-line { animation: scan-line 2.5s ease-in-out infinite; }

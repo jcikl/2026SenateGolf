@@ -62,7 +62,8 @@ export interface Guest {
   hotelCheckIn?: string;
   hotelCheckOut?: string;
   checkedInAt?: string;
-  checkedInEvents?: string[]; // Track all events checked in to
+  lastCheckedInEvent?: string; // Track which event was last checked in
+  checkedInEvents?: Record<string, string>; // EventID -> Timestamp ISO string
   checkInCount: number;
 }
 
