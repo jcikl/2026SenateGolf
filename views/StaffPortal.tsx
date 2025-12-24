@@ -1,50 +1,56 @@
-
-
-import React, { useState } from 'react';
-import { Guest, EventSchedule, PackagePermissions, PermissionMeta } from '../types';
-
-import { QrCode, Search, CheckCircle, AlertTriangle, AlertCircle, History, XCircle, Calendar, Camera } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Guest, EventSchedule, PermissionMeta, PackageCategory } from '../types';
+import { QrCode, Search, CheckCircle, XCircle, LogOut, Calendar, History, ArrowRight } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
+import { db } from '../firebase';
+import { doc, updateDoc, collection, addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp } from 'firebase/firestore';
 
 interface StaffPortalProps {
   guests: Guest[];
-  onUpdateGuests: (updatedList: Guest[]) => void;
+  onUpdateGuests: (guests: Guest[]) => void;
   schedules: EventSchedule[];
-  packagePermissions: PackagePermissions;
-  categoryPermissions: Record<string, PermissionMeta[]>;
+  packagePermissions: any;
+  categoryPermissions: Record<PackageCategory, PermissionMeta[]>;
+}
+
+interface CheckinLog {
+  id: string; // firestore id
+  guestId: string;
+  guestName: string;
+  guestPackage: string;
+  eventId: string;
+  eventTitle: string;
+  timestamp: string; // ISO string for display
+  createdAt: any; // ServerTimestamp for sorting
 }
 
 const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, schedules, packagePermissions, categoryPermissions }) => {
   const [activeTab, setActiveTab] = useState<'Scan' | 'History' | 'Stats'>('Scan');
-  const [searchQuery, setSearchQuery] = useState('');
   const [scannedGuest, setScannedGuest] = useState<Guest | null>(null);
-  const [showResult, setShowResult] = useState<{ status: 'success' | 'denied'; message: string } | null>(null);
+  const [showResult, setShowResult] = useState<{ status: 'success' | 'error', message: string } | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string>('');
-  const [logFilterEventId, setLogFilterEventId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [logFilterEventId, setLogFilterEventId] = useState('');
+  const [recentLogs, setRecentLogs] = useState<CheckinLog[]>([]);
 
-  const parseTime = (t: string) => {
-    const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-    if (!match) return 0;
-    let h = parseInt(match[1]);
-    const m = parseInt(match[2]);
-    const period = match[3].toUpperCase();
-    if (period === 'PM' && h < 12) h += 12;
-    if (period === 'AM' && h === 12) h = 0;
-    return h * 60 + m;
+  const selectedEvent = schedules.find(s => s.id === selectedEventId);
+
+  // Group schedules by date and sort correctly
+  const parseTime = (timeStr: string) => {
+    const [time, period] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
   };
 
-  // Group and sort schedules for dropdown
-  const groupedSchedules = schedules.reduce((groups, item) => {
-    const date = item.date;
-    if (!groups[date]) groups[date] = [];
-    groups[date].push(item);
-    return groups;
+  const groupedSchedules = schedules.reduce((acc, curr) => {
+    if (!acc[curr.date]) acc[curr.date] = [];
+    acc[curr.date].push(curr);
+    return acc;
   }, {} as Record<string, EventSchedule[]>);
 
-  Object.keys(groupedSchedules).forEach(date => {
-    groupedSchedules[date].sort((a, b) => parseTime(a.time) - parseTime(b.time));
-  });
-
+  // Sort dates and times
   const sortedDates = Object.keys(groupedSchedules).sort((a, b) => {
     const parseDate = (d: string) => {
       const parts = d.split('.');
@@ -54,99 +60,123 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
     return parseDate(a) - parseDate(b);
   });
 
-  const selectedEvent = schedules.find(s => s.id === selectedEventId);
+  sortedDates.forEach(date => {
+    groupedSchedules[date].sort((a, b) => parseTime(a.time) - parseTime(b.time));
+  });
 
-  const handleScan = (guestId: string | null) => {
-    if (!guestId) return;
+  // Subscribe to Checkin Logs
+  useEffect(() => {
+    if (activeTab !== 'History') return;
 
-    // Normalize ID
-    const normalizedId = guestId.trim().toUpperCase();
-    console.log("Scanned/Input ID:", normalizedId);
+    let q;
+    const logsRef = collection(db, 'checkins');
 
-    if (!selectedEventId) {
-      alert("PLEASE SELECT THE ACTIVE STATION/EVENT BEFORE SCANNING.");
-      return;
-    }
-
-    // Direct ID match or search by name (for manual fallback)
-    const found = guests.find(g => g.id.toUpperCase() === normalizedId) ||
-      guests.find(g => g.name.toUpperCase().includes(normalizedId) && normalizedId.length > 3);
-
-    if (found) {
-      setScannedGuest(found);
+    if (logFilterEventId) {
+      q = query(logsRef, where('eventId', '==', logFilterEventId), orderBy('createdAt', 'desc'), limit(50));
     } else {
-      alert("Invalid ID or Check-in Code - No matching delegate found.");
+      q = query(logsRef, orderBy('createdAt', 'desc'), limit(50));
     }
-  };
 
-  const handleError = (err: any) => {
-    console.error(err);
-  };
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const logs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as CheckinLog[];
+      setRecentLogs(logs);
+    });
 
-  const validateAccess = (guest: Guest): boolean => {
-    if (!selectedEvent || !selectedEvent.permissionId) return true; // Public event
-    const pkgPerms = packagePermissions[guest.package];
-    if (!pkgPerms) return false;
+    return () => unsubscribe();
+  }, [activeTab, logFilterEventId]);
 
-    // 1. Direct Rule Match
-    if (pkgPerms.permissions[selectedEvent.permissionId] === true) return true;
 
-    // 2. Linked Itinerary Match via any granted rule in this package's category
-    const cat = pkgPerms.category;
-    const rules = categoryPermissions[cat] || [];
-    const grantedRuleIds = Object.keys(pkgPerms.permissions).filter(id => pkgPerms.permissions[id] === true);
+  const validateAccess = (guest: Guest) => {
+    if (!selectedEvent) return false;
+    // Check direct permission (legacy)
+    if (packagePermissions[guest.package]?.permissions?.[selectedEvent.permissionId] === true) return true;
 
-    return rules.some(rule => {
-      if (!grantedRuleIds.includes(rule.id)) return false;
+    // Check Category Permissions (including linked itineraries)
+    const cat = packagePermissions[guest.package]?.category;
+    const categoryRules = categoryPermissions[cat] || [];
+
+    // Find any rule that grants access to this itinerary item (either directly or via Linked Itinerary)
+    const grantingRule = categoryRules.find(rule => {
+      // Direct permission match
+      if (rule.permissionId === selectedEvent.permissionId) return true;
+      // Linked Itinerary match
       const links = Array.isArray(rule.linkedItinerary) ? rule.linkedItinerary : (rule.linkedItinerary ? [rule.linkedItinerary] : []);
       return links.includes(selectedEvent.id);
     });
+
+    return !!grantingRule;
   };
 
-  const processCheckIn = () => {
-    if (!scannedGuest) return;
-    const hasAccess = validateAccess(scannedGuest);
-
-    if (!hasAccess) {
-      setShowResult({
-        status: 'denied',
-        message: `ACCESS DENIED: Package "${scannedGuest.package}" does not grant entry for "${selectedEvent?.title}".`
-      });
-      return;
+  const handleScan = (data: string) => {
+    if (!data) return;
+    const guest = guests.find(g => g.id === data || g.name.toLowerCase() === data.toLowerCase());
+    if (guest) {
+      setScannedGuest(guest);
+      setShowResult(null);
+    } else {
+      alert('Guest not found');
     }
+  };
 
-    if (scannedGuest.checkedInEvents && scannedGuest.checkedInEvents[selectedEventId]) {
-      const time = new Date(scannedGuest.checkedInEvents[selectedEventId]).toLocaleTimeString();
-      alert(`GUEST ALREADY CHECKED IN to this event at ${time}`);
-      return;
-    }
+  const processCheckIn = async () => {
+    if (!scannedGuest || !selectedEvent) return;
 
-    const updated = guests.map(g => {
-      if (g.id === scannedGuest.id) {
-        const newCheckedInEvents = { ...g.checkedInEvents, [selectedEventId]: new Date().toISOString() };
-        return {
-          ...g,
-          checkInCount: g.checkInCount + 1,
-          checkedInAt: new Date().toLocaleString(),
-          lastCheckedInEvent: selectedEventId,
-          checkedInEvents: newCheckedInEvents
-        };
+    if (validateAccess(scannedGuest)) {
+      // Check for duplicate check-in
+      if (scannedGuest.checkedInEvents && scannedGuest.checkedInEvents[selectedEvent.id]) {
+        setShowResult({ status: 'error', message: `GUEST ALREADY CHECKED IN AT ${scannedGuest.checkedInEvents[selectedEvent.id].split('T')[1].substring(0, 5)}` });
+        return;
       }
-      return g;
-    });
 
-    localStorage.setItem('lastScannedId', scannedGuest.id);
-    onUpdateGuests(updated);
-    setShowResult({ status: 'success', message: 'Verification Success - Access Granted.' });
+      const timestamp = new Date().toISOString();
+      const updatedGuest = {
+        ...scannedGuest,
+        checkedInAt: timestamp,
+        lastCheckedInEvent: selectedEvent.id,
+        checkedInEvents: {
+          ...(scannedGuest.checkedInEvents || {}),
+          [selectedEvent.id]: timestamp
+        }
+      };
 
-    setTimeout(() => { setShowResult(null); setScannedGuest(null); }, 2500);
+      const newGuests = guests.map(g => g.id === updatedGuest.id ? updatedGuest : g);
+
+      // Persist local storage for persistence across reloads if needed
+      localStorage.setItem('lastScannedId', scannedGuest.id);
+
+      onUpdateGuests(newGuests);
+
+      // Create Checkin Log
+      try {
+        await addDoc(collection(db, 'checkins'), {
+          guestId: scannedGuest.id,
+          guestName: scannedGuest.name,
+          guestPackage: scannedGuest.package,
+          eventId: selectedEvent.id,
+          eventTitle: selectedEvent.title,
+          timestamp: timestamp,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {
+        console.error("Failed to write checkin log:", e);
+      }
+
+      setShowResult({ status: 'success', message: `${scannedGuest.name} checked in to ${selectedEvent.title}` });
+    } else {
+      setShowResult({ status: 'error', message: 'ACCESS DENIED: Package restriction' });
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
-      {/* Active Station Selection - Based on Itinerary */}
-      <div className="bg-[#014227] rounded-[40px] p-8 text-white shadow-2xl border-b-[10px] border-[#FFD700] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-[#FFD700]/5 rounded-full -mr-24 -mt-24"></div>
+    <div className="p-6 md:p-12 max-w-7xl mx-auto min-h-screen pb-32">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+        <div>
+          <h1 className="text-4xl md:text-6xl font-black text-[#014227] tracking-tighter mb-2">STAFF HUB<span className="text-[#FFD700]">.</span></h1>
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Event Access Control System</p>
+        </div>
         <div className="flex items-center space-x-4 mb-6 relative z-10">
           <div className="bg-[#FFD700] text-[#014227] p-4 rounded-3xl shadow-xl transform -rotate-3"><Calendar size={28} /></div>
           <div>
@@ -353,20 +383,18 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
             <table className="w-full text-left">
               <thead className="bg-[#FFFBEB] text-[11px] font-black text-[#014227] uppercase tracking-widest"><tr><th className="px-10 py-5">Delegate Identity</th><th className="px-10 py-5">Station Log</th><th className="px-10 py-5">Timestamp</th></tr></thead>
               <tbody className="divide-y divide-gray-50">
-                {guests
-                  .filter(g => g.checkedInAt)
-                  .filter(g => !logFilterEventId || g.lastCheckedInEvent === logFilterEventId)
-                  .sort((a, b) => (b.checkedInAt || '').localeCompare(a.checkedInAt || ''))
-                  .map(g => (
-                    <tr key={g.id} className="hover:bg-gray-50 transition group">
+                {recentLogs
+                  .filter(log => !searchQuery || log.guestName.toLowerCase().includes(searchQuery.toLowerCase()) || log.guestId.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map(log => (
+                    <tr key={log.id} className="hover:bg-gray-50 transition group">
                       <td className="px-10 py-7">
-                        <div className="text-base font-black text-[#014227]">{g.name}</div>
-                        <div className="text-[10px] text-gray-400 font-bold uppercase">{g.id} • {g.package}</div>
+                        <div className="text-base font-black text-[#014227]">{log.guestName}</div>
+                        <div className="text-[10px] text-gray-400 font-bold uppercase">{log.guestId} • {log.guestPackage}</div>
                       </td>
                       <td className="px-10 py-7 text-xs font-black text-gray-600 uppercase tracking-tighter">
-                        {g.lastCheckedInEvent ? schedules.find(s => s.id === g.lastCheckedInEvent)?.title || 'Access Verified' : 'Access Verified'}
+                        {log.eventTitle}
                       </td>
-                      <td className="px-10 py-7 text-[11px] font-mono text-gray-400 font-bold">{g.checkedInAt}</td>
+                      <td className="px-10 py-7 text-[11px] font-mono text-gray-400 font-bold">{new Date(log.timestamp).toLocaleString()}</td>
                     </tr>
                   ))}
               </tbody>
