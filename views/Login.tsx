@@ -13,7 +13,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     onLogin(passport, name);
   };
 
-  const logoPath = "images/Senate Golf Logo_Vertical Black (Transparent).png";
+  const logoPath = "/images/Senate Golf Logo_Vertical Black (Transparent).png";
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
@@ -27,7 +27,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               alt="30th ASPAC Senate Golf"
               className="h-full object-contain"
               onError={(e) => {
-                (e.target as any).src = "images/Senate Golf Logo_Vertical Black (Transparent).png";
+                (e.target as any).src = "/images/Senate Golf Logo_Vertical Black (Transparent).png";
               }}
             />
           </div>

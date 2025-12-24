@@ -20,7 +20,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewCha
   ];
 
   // Using the vertical white transparent logo for better contrast on dark green
-  const logoPath = "images/Senate Golf Logo_Vertical White (Transparent).png";
+  const logoPath = "/images/Senate Golf Logo_Vertical White (Transparent).png";
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FFFDF5]">
@@ -110,7 +110,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewCha
             >
               {item.id === 'General' ? (
                 <img
-                  src="images/Senate Golf Logo_Vertical White (Transparent).png"
+                  src="/images/Senate Golf Logo_Vertical White (Transparent).png"
                   alt="Logo"
                   className={`object-contain transition-all ${currentView === item.id ? 'w-12 h-12' : 'w-10 h-10 brightness-0 invert'}`}
                 />
