@@ -25,6 +25,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
 
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(2); // Default to Sunday (Day 3)
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
+  const [nearbyFilter, setNearbyFilter] = useState('All');
 
   const getMapPreview = (url: string) => {
     if (!url) return null;
@@ -152,74 +153,91 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0">
-              {[...attractions, ...diningGuide].map(place => (
-                <div key={place.id} className="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm border border-gray-100 group hover:shadow-xl transition-all duration-500 flex flex-row md:flex-col items-stretch">
-                  <div className="w-28 md:w-full md:h-32 shrink-0 relative bg-gray-50 flex items-center justify-center overflow-hidden">
-                    {place.img && !imgErrors[place.id] ? (
-                      <img
-                        src={getMapPreview(place.img) || ''}
-                        alt={place.name}
-                        className="w-full h-full object-cover transition duration-700 group-hover:scale-110"
-                        onError={() => setImgErrors(prev => ({ ...prev, [place.id]: true }))}
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center gap-1 text-gray-300">
-                        <Landmark size={32} className="opacity-20" />
-                        <span className="text-[8px] font-black uppercase tracking-tighter opacity-10">Map Link</span>
-                      </div>
-                    )}
-                    <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-[#FFD700] text-[#014227] px-1.5 py-0.5 rounded-lg text-[7px] md:text-[9px] font-black shadow-lg uppercase tracking-widest">
-                      {place.dist}
-                    </div>
-                  </div>
-                  <div className="flex-1 p-3 md:p-6 flex flex-col justify-between min-w-0">
-                    <div className="space-y-2">
-                      <div>
-                        {place.type && <span className="text-[7px] md:text-[9px] font-black uppercase text-[#014227]/40 tracking-wider mb-0.5 block">{place.type}</span>}
-                        <h4 className="font-black text-gray-900 text-sm md:text-lg truncate md:whitespace-normal">{place.name}</h4>
-                      </div>
+            {/* Filter Bar */}
+            <div className="px-4 md:px-0">
+              <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                {['All', ...Array.from(new Set([...attractions, ...diningGuide].map(p => p.type || 'Other'))).sort()].map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setNearbyFilter(type)}
+                    className={`px-4 py-1.5 rounded-full text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all ${nearbyFilter === type ? 'bg-[#014227] text-[#FFD700] shadow-md transform scale-105' : 'bg-white text-gray-400 border border-gray-100 hover:border-[#014227] hover:text-[#014227]'}`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                      <div className="space-y-1">
-                        {place.address && (
-                          <div className="flex items-start gap-1.5 text-[8px] md:text-[10px] text-gray-500 font-medium">
-                            <MapPin size={10} className="shrink-0 text-[#FFD700] mt-0.5" />
-                            <span className="line-clamp-1">{place.address}</span>
-                          </div>
-                        )}
-                        <div className="flex flex-wrap gap-2 md:gap-3">
-                          {place.phone && (
-                            <div className="flex items-center gap-1 text-[8px] md:text-[10px] text-gray-500 font-medium">
-                              <Phone size={10} className="shrink-0 text-[#FFD700]" />
-                              <span>{place.phone}</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0">
+              {[...attractions, ...diningGuide]
+                .filter(place => nearbyFilter === 'All' || (place.type || 'Other') === nearbyFilter)
+                .map(place => (
+                  <div key={place.id} className="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm border border-gray-100 group hover:shadow-xl transition-all duration-500 flex flex-row md:flex-col items-stretch">
+                    <div className="w-28 md:w-full md:h-32 shrink-0 relative bg-gray-50 flex items-center justify-center overflow-hidden">
+                      {place.img && !imgErrors[place.id] ? (
+                        <img
+                          src={getMapPreview(place.img) || ''}
+                          alt={place.name}
+                          className="w-full h-full object-cover transition duration-700 group-hover:scale-110"
+                          onError={() => setImgErrors(prev => ({ ...prev, [place.id]: true }))}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-1 text-gray-300">
+                          <Landmark size={32} className="opacity-20" />
+                          <span className="text-[8px] font-black uppercase tracking-tighter opacity-10">Map Link</span>
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-[#FFD700] text-[#014227] px-1.5 py-0.5 rounded-lg text-[7px] md:text-[9px] font-black shadow-lg uppercase tracking-widest">
+                        {place.dist}
+                      </div>
+                    </div>
+                    <div className="flex-1 p-3 md:p-6 flex flex-col justify-between min-w-0">
+                      <div className="space-y-2">
+                        <div>
+                          {place.type && <span className="text-[7px] md:text-[9px] font-black uppercase text-[#014227]/40 tracking-wider mb-0.5 block">{place.type}</span>}
+                          <h4 className="font-black text-gray-900 text-sm md:text-lg truncate md:whitespace-normal">{place.name}</h4>
+                        </div>
+
+                        <div className="space-y-1">
+                          {place.address && (
+                            <div className="flex items-start gap-1.5 text-[8px] md:text-[10px] text-gray-500 font-medium">
+                              <MapPin size={10} className="shrink-0 text-[#FFD700] mt-0.5" />
+                              <span className="line-clamp-1">{place.address}</span>
                             </div>
                           )}
-                          {place.hours && (
-                            <div className="flex items-center gap-1 text-[8px] md:text-[10px] text-gray-500 font-medium">
-                              <Clock size={10} className="shrink-0 text-[#FFD700]" />
-                              <span>{place.hours}</span>
+                          <div className="flex flex-wrap gap-2 md:gap-3">
+                            {place.phone && (
+                              <div className="flex items-center gap-1 text-[8px] md:text-[10px] text-gray-500 font-medium">
+                                <Phone size={10} className="shrink-0 text-[#FFD700]" />
+                                <span>{place.phone}</span>
+                              </div>
+                            )}
+                            {place.hours && (
+                              <div className="flex items-center gap-1 text-[8px] md:text-[10px] text-gray-500 font-medium">
+                                <Clock size={10} className="shrink-0 text-[#FFD700]" />
+                                <span>{place.hours}</span>
+                              </div>
+                            )}
+                          </div>
+                          {place.website && (
+                            <div className="flex items-center gap-1.5 text-[8px] md:text-[10px] text-[#014227] font-black uppercase tracking-tighter">
+                              <Globe size={10} className="shrink-0 text-[#FFD700]" />
+                              <button onClick={() => window.open(place.website, '_blank')} className="hover:underline">Visit Website</button>
                             </div>
                           )}
                         </div>
-                        {place.website && (
-                          <div className="flex items-center gap-1.5 text-[8px] md:text-[10px] text-[#014227] font-black uppercase tracking-tighter">
-                            <Globe size={10} className="shrink-0 text-[#FFD700]" />
-                            <button onClick={() => window.open(place.website, '_blank')} className="hover:underline">Visit Website</button>
-                          </div>
-                        )}
-                      </div>
 
-                      <p className="text-[9px] md:text-xs text-gray-400 font-medium leading-relaxed line-clamp-1 md:line-clamp-2 md:pt-1">{place.desc}</p>
+                        <p className="text-[9px] md:text-xs text-gray-400 font-medium leading-relaxed line-clamp-1 md:line-clamp-2 md:pt-1">{place.desc}</p>
+                      </div>
+                      <button
+                        onClick={() => place.img && window.open(place.img, '_blank')}
+                        className="mt-3 md:mt-5 w-full bg-[#014227] text-[#FFD700] py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black transition transform active:scale-95"
+                      >
+                        Get Directions
+                      </button>
                     </div>
-                    <button
-                      onClick={() => place.img && window.open(place.img, '_blank')}
-                      className="mt-3 md:mt-5 w-full bg-[#014227] text-[#FFD700] py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black transition transform active:scale-95"
-                    >
-                      Get Directions
-                    </button>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         )}

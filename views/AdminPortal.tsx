@@ -43,7 +43,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [activeAdminTab, setActiveAdminTab] = useState<AdminView>('Attendees');
   const [activeGolfDay, setActiveGolfDay] = useState<1 | 2>(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+  const [pasteMode, setPasteMode] = useState<'guests' | 'nearby'>('guests');
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'package' | 'rule' | 'attendee' | 'itinerary' | 'nearby' | 'golf' } | null>(null);
+  const [importPreview, setImportPreview] = useState<string[][] | null>(null);
 
   useEffect(() => {
     if (deleteConfirm) {
@@ -53,7 +56,6 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   }, [deleteConfirm]);
   const [editingItem, setEditingItem] = useState<{ type: AdminView; data: any } | null>(null);
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
-  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [pastedData, setPastedData] = useState('');
   const [importResult, setImportResult] = useState<{ total: number; imported: number; failed: { row: number; reason: string; data: string }[] } | null>(null);
   const [editingPackage, setEditingPackage] = useState<any>(null);
@@ -966,9 +968,25 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
       {activeAdminTab === 'Nearby' && (
         <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
-          <div className="p-8 bg-[#014227] text-[#FFD700]">
-            <h3 className="text-lg font-black uppercase tracking-widest">Nearby Places</h3>
-            <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{attractions.length} Locations Listing</p>
+          <div className="p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-black uppercase tracking-widest">Nearby Places</h3>
+              <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{attractions.length} Locations Listing</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingItem({ type: 'Nearby', data: { id: 'temp_' + Date.now(), name: '', dist: '', desc: '', type: 'Landmark' } })}
+                className="bg-[#014227] border border-[#FFD700] text-[#FFD700] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FFD700] hover:text-[#014227] transition flex items-center gap-2"
+              >
+                <Plus size={14} /> Add
+              </button>
+              <button
+                onClick={() => { setPasteMode('nearby'); setIsPasteModalOpen(true); }}
+                className="bg-[#FFD700] text-[#014227] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-white hover:text-[#014227] transition flex items-center gap-2"
+              >
+                <ClipboardPaste size={14} /> Paste
+              </button>
+            </div>
           </div>
           <div className="md:hidden p-4 space-y-4 bg-gray-50/50">
             {attractions.map(attraction => (
@@ -1403,128 +1421,207 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
             <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]">
               <div className="p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center shrink-0">
                 <div>
-                  <h3 className="text-xl font-black uppercase tracking-tight">Bulk Import Attendees</h3>
+                  <h3 className="text-xl font-black uppercase tracking-tight">Bulk Import {pasteMode === 'nearby' ? 'Nearby Places' : 'Attendees'}</h3>
                   <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mt-1">Paste TSV or CSV data with headers below</p>
                 </div>
-                <button onClick={() => { setIsPasteModalOpen(false); setPastedData(''); setImportResult(null); }} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition">
+                <button onClick={() => { setIsPasteModalOpen(false); setPastedData(''); setImportResult(null); setImportPreview(null); }} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition">
                   <X size={20} />
                 </button>
               </div>
 
               {!importResult ? (
-                <div className="p-8 space-y-6 flex-1 overflow-auto">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Pasted Content</label>
-                    <textarea
-                      className="w-full h-64 p-6 bg-gray-50 border border-gray-100 rounded-3xl font-mono text-xs outline-none focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all resize-none"
-                      placeholder="Guest ID&#9;Name on tag&#9;Name&#9;Nation...&#10;G001&#9;John&#9;John Doe&#9;USA..."
-                      value={pastedData}
-                      onChange={(e) => setPastedData(e.target.value)}
-                    />
-                  </div>
-                  <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
-                    <p className="text-[10px] font-bold text-amber-800 leading-relaxed uppercase tracking-wider text-[8px]">
-                      Tip: Ensure your columns include 'Guest ID' and 'Name'. Tabs or commas are both accepted.
-                    </p>
-                  </div>
-                  <div className="flex justify-end space-x-4 pt-4">
-                    <button
-                      onClick={() => { setIsPasteModalOpen(false); setPastedData(''); }}
-                      className="px-6 py-3 font-black text-[10px] uppercase text-gray-400"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!pastedData.trim()) return;
-                        const result = { total: 0, imported: 0, failed: [] as any[] };
-                        const validGuests: Guest[] = [];
-
-                        try {
-                          const lines = pastedData.trim().split(/\r?\n/).filter(l => l.trim());
-                          if (lines.length < 2) throw new Error('No data rows found.');
-
-                          const firstLine = lines[0];
-                          const delimiter = firstLine.includes('\t') ? '\t' : ',';
-                          const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase());
-
-                          result.total = lines.length - 1;
-
-                          lines.slice(1).forEach((line, rowIdx) => {
-                            try {
-                              const values = line.split(delimiter).map(v => v.trim());
-                              // Basic column count check (warn only)
-                              // if (values.length !== headers.length) throw new Error(`Column count mismatch (Expected ${headers.length}, got ${values.length})`);
-
-                              const g: any = { checkInCount: 0, passportLast4: '' };
-                              let hasId = false;
-                              let hasName = false;
-
-                              headers.forEach((h, i) => {
-                                const val = values[i] || '';
-                                if (h === 'id' || h === 'guest id' || h === 'guestid') { g.id = val; hasId = !!val; }
-                                else if (h.includes('tag')) g.nameOnTag = val;
-                                else if (h === 'name' || h === 'fullname' || h === 'full name') { g.name = val; hasName = !!val; }
-                                else if (h.includes('gender')) g.gender = val;
-                                else if (h.includes('position')) g.position = val;
-
-                                else if (h.includes('nation')) g.nation = val;
-                                else if (h.includes('local org')) g.localOrg = val;
-                                else if (h.includes('senator')) g.senatorshipId = val;
-                                else if (h.includes('golfer')) g.isGolfParticipant = val.toLowerCase() === 'yes' || val === 'true';
-                                else if (h.includes('whatsapp')) g.whatsapp = val;
-                                else if (h.includes('line')) g.lineID = val;
-                                else if (h.includes('mail') || h.includes('email')) g.email = val;
-                                else if (h.includes('food')) g.foodPreference = val;
-                                else if (h.includes('allergy')) g.allergies = val;
-                                else if (h.includes('package')) g.package = val;
-                                else if (h.includes('t-shirt')) g.tShirtSize = val;
-                                else if (h.includes('single')) g.singleOccupancy = val.toLowerCase() === 'yes' || val === 'true';
-                                else if (h.includes('27 march')) g.additionalRoom27Mar = val.toLowerCase() === 'yes' || val === 'true';
-                                else if (h.includes('28 march')) g.additionalRoom28Mar = val.toLowerCase() === 'yes' || val === 'true';
-                              });
-
-                              if (!hasId) throw new Error("Missing 'Guest ID'");
-                              if (!hasName) throw new Error("Missing 'Name'");
-
-                              // Check duplicates in existing 
-                              if (guests.find(existing => existing.id === g.id)) {
-                                // Optional: Allow update? For now, let's treat as OK (Update) or Error? 
-                                // User usually wants "Import" to mean Add/Update. 
-                                // Let's allow it but log it? 
-                                // Actually, let's treat success.
-                              }
-
-                              validGuests.push(g as Guest);
-                              result.imported++;
-
-                            } catch (rowErr: any) {
-                              result.failed.push({ row: rowIdx + 2, reason: rowErr.message, data: line });
-                            }
-                          });
-
-                          if (validGuests.length > 0) {
-                            // Merge with existing guests: Replace if ID exists, else add.
-                            const merged = [...guests];
-                            validGuests.forEach(newG => {
-                              const idx = merged.findIndex(ex => ex.id === newG.id);
-                              if (idx > -1) merged[idx] = { ...merged[idx], ...newG };
-                              else merged.push(newG);
-                            });
-                            onUpdateGuests(merged);
-                          }
-
-                          setImportResult(result);
-
-                        } catch (err: any) {
-                          window.alert(`Fatal Import Error: ${err.message}`);
-                        }
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  {!importPreview ? (
+                    <div
+                      className="flex-1 m-8 border-4 border-dashed border-gray-200 rounded-[32px] flex flex-col items-center justify-center bg-gray-50/50 hover:bg-green-50/50 hover:border-[#014227]/30 transition-all cursor-text group"
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        const text = e.clipboardData.getData('text');
+                        if (!text.trim()) return;
+                        const rows = text.trim().split(/\r?\n/).map(row => {
+                          const delimiter = row.includes('\t') ? '\t' : ',';
+                          return row.split(delimiter).map(cell => cell.trim());
+                        });
+                        if (rows.length > 0) setImportPreview(rows);
                       }}
-                      className="bg-[#014227] text-[#FFD700] px-10 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transition transform active:scale-95"
+                      onClick={() => {
+                        // Optional: Focus a hidden textarea if needed for mobile, but typically desktop paste is fine
+                      }}
                     >
-                      Analyze & Import
-                    </button>
-                  </div>
+                      <div className="p-6 bg-white rounded-full shadow-lg mb-4 group-hover:scale-110 transition-transform">
+                        <ClipboardPaste size={32} className="text-[#014227]" />
+                      </div>
+                      <h4 className="text-xl font-black text-[#014227] uppercase tracking-tight mb-2">Click Here & Press Ctrl+V</h4>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Paste your Excel or CSV data</p>
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                      <div className="px-8 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                        <div className="flex items-center gap-3">
+                          <span className="bg-[#014227] text-[#FFD700] px-3 py-1 rounded-lg text-[9px] font-black">{importPreview.length - 1} Records</span>
+                          <span>Preview Mode</span>
+                        </div>
+                        <button onClick={() => setImportPreview(null)} className="text-red-500 hover:text-red-700 hover:underline">Clear & Retry</button>
+                      </div>
+                      <div className="flex-1 overflow-auto p-4 md:p-8 bg-gray-50/50">
+                        <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm bg-white inline-block min-w-full">
+                          <table className="min-w-full text-left border-collapse">
+                            <thead>
+                              <tr>
+                                {importPreview[0].map((header, i) => (
+                                  <th key={i} className="px-5 py-4 bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-r border-gray-100 last:border-r-0 whitespace-nowrap sticky top-0 z-10">
+                                    {header}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {importPreview.slice(1).map((row, i) => (
+                                <tr key={i} className="hover:bg-amber-50/50 transition-colors">
+                                  {row.map((cell, j) => (
+                                    <td key={j} className="px-5 py-3 border-r border-gray-100 last:border-r-0 text-[11px] text-gray-600 font-medium whitespace-nowrap">
+                                      {cell}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <div className="p-6 border-t border-gray-100 bg-white shrink-0 flex justify-end gap-3">
+                        <button
+                          onClick={() => { setIsPasteModalOpen(false); setPastedData(''); setImportPreview(null); }}
+                          className="px-6 py-3 font-black text-[10px] uppercase text-gray-400 hover:bg-gray-50 rounded-2xl transition"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!importPreview) return;
+                            const result = { total: 0, imported: 0, failed: [] as any[] };
+                            const validGuests: Guest[] = [];
+
+
+                            if (pasteMode === 'nearby') {
+                              try {
+                                const headers = importPreview[0].map(h => h.toLowerCase());
+                                const rows = importPreview.slice(1);
+                                result.total = rows.length;
+
+                                const validPlaces: any[] = [];
+
+                                rows.forEach((values, rowIdx) => {
+                                  try {
+                                    const p: any = {};
+                                    let hasName = false;
+
+                                    headers.forEach((h, i) => {
+                                      const val = values[i] || ''; // Default to empty string
+                                      if (h.includes('name')) { p.name = val; hasName = !!val; }
+                                      else if (h.includes('dist')) p.dist = val;
+                                      else if (h.includes('desc')) p.desc = val;
+                                      else if (h.includes('type')) p.type = val;
+                                      else if (h.includes('addr')) p.address = val;
+                                      else if (h.includes('phone')) p.phone = val;
+                                      else if (h.includes('hour') || h.includes('open')) p.hours = val;
+                                      else if (h.includes('web') || h.includes('url')) p.website = val;
+                                      else if (h.includes('map') || h.includes('location')) p.img = val;
+                                    });
+
+                                    if (!hasName) throw new Error('Missing Name');
+                                    if (!p.id) p.id = p.name.replace(/\s+/g, '_').toLowerCase(); // Generate simple ID
+
+                                    validPlaces.push(p);
+                                    result.imported++;
+                                  } catch (e: any) {
+                                    result.failed.push({ row: rowIdx + 2, reason: e.message, data: values.join(', ') });
+                                  }
+                                });
+
+                                if (validPlaces.length > 0) {
+                                  const existingIds = new Set(attractions.map(a => a.id));
+                                  const merged = [...attractions];
+                                  validPlaces.forEach(p => {
+                                    if (existingIds.has(p.id)) {
+                                      const idx = merged.findIndex(x => x.id === p.id);
+                                      if (idx !== -1) merged[idx] = { ...merged[idx], ...p };
+                                    } else {
+                                      merged.push(p);
+                                    }
+                                  });
+                                  onUpdateAttractions(merged);
+                                }
+                                setImportResult(result);
+                              } catch (e: any) {
+                                window.alert('Import Failed: ' + e.message);
+                              }
+                            } else {
+                              // Guest Import Logic
+                              try {
+                                const headers = importPreview[0].map(h => h.toLowerCase());
+                                const rows = importPreview.slice(1);
+                                result.total = rows.length;
+
+                                rows.forEach((values, rowIdx) => {
+                                  try {
+                                    const g: any = { checkInCount: 0, passportLast4: '' };
+                                    let hasId = false;
+
+                                    headers.forEach((h, i) => {
+                                      const val = values[i];
+                                      if (h.includes('id') && !h.includes('line') && !h.includes('senator')) { g.id = val; hasId = true; }
+                                      else if (h.includes('tag')) g.nameOnTag = val;
+                                      else if (h.includes('name')) g.name = val;
+                                      else if (h.includes('nation')) g.nation = val;
+                                      else if (h.includes('org')) g.localOrg = val;
+                                      else if (h.includes('senator')) g.senatorshipId = val;
+                                      else if (h.includes('pack')) g.package = val;
+                                      else if (h.includes('mail')) g.email = val;
+                                      else if (h.includes('app')) g.whatsapp = val;
+                                      else if (h.includes('line')) g.lineID = val;
+                                      else if (h.includes('phone')) g.phone = val;
+                                      else if (h.includes('shirt')) g.tShirtSize = val;
+                                      else if (h.includes('pref')) g.foodPreference = val;
+                                      else if (h.includes('allergy') || h.includes('medic')) g.allergies = val;
+                                      else if (h.includes('golf')) g.isGolfParticipant = val?.toLowerCase() === 'yes' || val?.toLowerCase() === 'true';
+                                      else if (h.includes('single')) g.singleOccupancy = val?.toLowerCase() === 'yes' || val?.toLowerCase() === 'true';
+                                    });
+
+                                    if (!hasId || !g.name) throw new Error('Missing ID or Name');
+                                    validGuests.push(g as Guest);
+                                    result.imported++;
+                                  } catch (e: any) {
+                                    result.failed.push({ row: rowIdx + 2, reason: e.message, data: values.join(', ') });
+                                  }
+                                });
+
+                                if (validGuests.length > 0) {
+                                  const existingIds = new Set(guests.map(g => g.id));
+                                  const merged = [...guests];
+                                  validGuests.forEach(g => {
+                                    if (existingIds.has(g.id)) {
+                                      const idx = merged.findIndex(x => x.id === g.id);
+                                      if (idx !== -1) merged[idx] = { ...merged[idx], ...g };
+                                    } else {
+                                      merged.push(g);
+                                    }
+                                  });
+                                  onUpdateGuests(merged);
+                                }
+                                setImportResult(result);
+                              } catch (e: any) {
+                                window.alert('Import Failed: ' + e.message);
+                              }
+                            }
+                          }}
+                          className="bg-[#014227] text-[#FFD700] px-8 py-3 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:gb-black transition transform active:scale-95"
+                        >
+                          Import {importPreview.length - 1} Records
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex-col flex h-full overflow-hidden">
@@ -1577,7 +1674,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
                   <div className="p-6 border-t border-gray-100 bg-gray-50 shrink-0 flex justify-end">
                     <button
-                      onClick={() => { setIsPasteModalOpen(false); setPastedData(''); setImportResult(null); }}
+                      onClick={() => { setIsPasteModalOpen(false); setPastedData(''); setImportResult(null); setImportPreview(null); }}
                       className="bg-[#014227] text-[#FFD700] px-8 py-3 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:gb-black transition"
                     >
                       Done
