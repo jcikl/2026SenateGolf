@@ -1,6 +1,7 @@
 
+
 import React, { useState } from 'react';
-import { Guest, EventSchedule, PackagePermissions } from '../types';
+import { Guest, EventSchedule, PackagePermissions, PermissionMeta } from '../types';
 
 import { QrCode, Search, CheckCircle, AlertTriangle, AlertCircle, History, XCircle, Calendar, Camera } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
@@ -10,14 +11,48 @@ interface StaffPortalProps {
   onUpdateGuests: (updatedList: Guest[]) => void;
   schedules: EventSchedule[];
   packagePermissions: PackagePermissions;
+  categoryPermissions: Record<string, PermissionMeta[]>;
 }
 
-const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, schedules, packagePermissions }) => {
-  const [activeTab, setActiveTab] = useState<'Scan' | 'History'>('Scan');
+const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, schedules, packagePermissions, categoryPermissions }) => {
+  const [activeTab, setActiveTab] = useState<'Scan' | 'History' | 'Statistics'>('Scan');
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedGuest, setScannedGuest] = useState<Guest | null>(null);
   const [showResult, setShowResult] = useState<{ status: 'success' | 'denied'; message: string } | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string>('');
+  const [logFilterEventId, setLogFilterEventId] = useState<string>('');
+
+  const parseTime = (t: string) => {
+    const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return 0;
+    let h = parseInt(match[1]);
+    const m = parseInt(match[2]);
+    const period = match[3].toUpperCase();
+    if (period === 'PM' && h < 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  };
+
+  // Group and sort schedules for dropdown
+  const groupedSchedules = schedules.reduce((groups, item) => {
+    const date = item.date;
+    if (!groups[date]) groups[date] = [];
+    groups[date].push(item);
+    return groups;
+  }, {} as Record<string, EventSchedule[]>);
+
+  Object.keys(groupedSchedules).forEach(date => {
+    groupedSchedules[date].sort((a, b) => parseTime(a.time) - parseTime(b.time));
+  });
+
+  const sortedDates = Object.keys(groupedSchedules).sort((a, b) => {
+    const parseDate = (d: string) => {
+      const parts = d.split('.');
+      if (parts.length === 3) return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
+      return 0;
+    };
+    return parseDate(a) - parseDate(b);
+  });
 
   const selectedEvent = schedules.find(s => s.id === selectedEventId);
 
@@ -52,7 +87,20 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
     if (!selectedEvent || !selectedEvent.permissionId) return true; // Public event
     const pkgPerms = packagePermissions[guest.package];
     if (!pkgPerms) return false;
-    return pkgPerms.permissions[selectedEvent.permissionId] === true;
+
+    // 1. Direct Rule Match
+    if (pkgPerms.permissions[selectedEvent.permissionId] === true) return true;
+
+    // 2. Linked Itinerary Match via any granted rule in this package's category
+    const cat = pkgPerms.category;
+    const rules = categoryPermissions[cat] || [];
+    const grantedRuleIds = Object.keys(pkgPerms.permissions).filter(id => pkgPerms.permissions[id] === true);
+
+    return rules.some(rule => {
+      if (!grantedRuleIds.includes(rule.id)) return false;
+      const links = Array.isArray(rule.linkedItinerary) ? rule.linkedItinerary : (rule.linkedItinerary ? [rule.linkedItinerary] : []);
+      return links.includes(selectedEvent.id);
+    });
   };
 
   const processCheckIn = () => {
@@ -67,9 +115,26 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
       return;
     }
 
+    // Check for duplicate check-in
+    const alreadyCheckedIn = scannedGuest.checkedInEvents?.includes(selectedEventId);
+    if (alreadyCheckedIn) {
+      setShowResult({
+        status: 'denied',
+        message: `DUPLICATE CHECK-IN: ${scannedGuest.name} has already checked in to "${selectedEvent?.title}".`
+      });
+      setTimeout(() => { setShowResult(null); setScannedGuest(null); }, 3000);
+      return;
+    }
+
     const updated = guests.map(g =>
-      g.id === scannedGuest.id ? { ...g, checkInCount: g.checkInCount + 1, checkedInAt: new Date().toLocaleString() } : g
+      g.id === scannedGuest.id ? {
+        ...g,
+        checkInCount: g.checkInCount + 1,
+        checkedInAt: new Date().toLocaleString(),
+        checkedInEvents: [...(g.checkedInEvents || []), selectedEventId]
+      } : g
     );
+    localStorage.setItem('lastScannedId', scannedGuest.id);
     onUpdateGuests(updated);
     setShowResult({ status: 'success', message: 'Verification Success - Access Granted.' });
 
@@ -94,10 +159,14 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
           className="w-full bg-white/10 border border-white/20 rounded-3xl px-6 py-5 text-sm font-black outline-none focus:ring-8 focus:ring-[#FFD700]/20 appearance-none transition-all cursor-pointer hover:bg-white/20"
         >
           <option value="" className="text-gray-900">-- SELECT ACTIVE PROCESS FROM ITINERARY --</option>
-          {schedules.map(s => (
-            <option key={s.id} value={s.id} className="text-gray-900">
-              [{s.date}] {s.time} {" >> "} {s.title}
-            </option>
+          {sortedDates.map(date => (
+            <optgroup key={date} label={date} className="text-gray-900 font-black">
+              {groupedSchedules[date].map(s => (
+                <option key={s.id} value={s.id} className="text-gray-900">
+                  {s.time} {'>>'} {s.title}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
@@ -108,6 +177,9 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
         </button>
         <button onClick={() => setActiveTab('History')} className={`flex-1 flex items-center justify-center space-x-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'History' ? 'bg-[#014227] text-[#FFD700] shadow-2xl' : 'text-gray-400'}`}>
           <History size={20} /><span>Recent Logs</span>
+        </button>
+        <button onClick={() => setActiveTab('Statistics')} className={`flex-1 flex items-center justify-center space-x-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'Statistics' ? 'bg-[#014227] text-[#FFD700] shadow-2xl' : 'text-gray-400'}`}>
+          <Trophy size={20} /><span>Statistics</span>
         </button>
       </div>
 
@@ -210,20 +282,90 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
       ) : (
         <div className="bg-white rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
           <div className="p-8 border-b border-gray-100 bg-gray-50 flex items-center space-x-4">
-            <Search className="text-gray-400" size={24} /><input type="text" placeholder="Search recent arrivals..." className="bg-transparent border-none outline-none flex-1 font-black text-sm text-[#014227]" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            <Search className="text-gray-400" size={24} />
+            <input type="text" placeholder="Search recent arrivals..." className="bg-transparent border-none outline-none flex-1 font-black text-sm text-[#014227]" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            <select
+              value={logFilterEventId}
+              onChange={(e) => setLogFilterEventId(e.target.value)}
+              className="bg-white border border-gray-200 rounded-2xl px-4 py-2 text-xs font-bold outline-none focus:border-[#014227] transition-all cursor-pointer"
+            >
+              <option value="">All Events</option>
+              {sortedDates.map(date => (
+                <optgroup key={date} label={date}>
+                  {groupedSchedules[date].map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.time} {'>>'} {s.title}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-[#FFFBEB] text-[11px] font-black text-[#014227] uppercase tracking-widest"><tr><th className="px-10 py-5">Delegate Identity</th><th className="px-10 py-5">Station Log</th><th className="px-10 py-5">Timestamp</th></tr></thead>
               <tbody className="divide-y divide-gray-50">
-                {guests.filter(g => g.checkedInAt).sort((a, b) => (b.checkedInAt || '').localeCompare(a.checkedInAt || '')).map(g => (
-                  <tr key={g.id} className="hover:bg-gray-50 transition group"><td className="px-10 py-7"><div className="text-base font-black text-[#014227]">{g.name}</div><div className="text-[10px] text-gray-400 font-bold uppercase">{g.id} • {g.package}</div></td><td className="px-10 py-7 text-xs font-black text-gray-600 uppercase tracking-tighter">Access Verified</td><td className="px-10 py-7 text-[11px] font-mono text-gray-400 font-bold">{g.checkedInAt}</td></tr>
-                ))}
+                {guests
+                  .filter(g => g.checkedInEvents && g.checkedInEvents.length > 0)
+                  .filter(g => !logFilterEventId || g.checkedInEvents?.includes(logFilterEventId))
+                  .sort((a, b) => (b.checkedInAt || '').localeCompare(a.checkedInAt || ''))
+                  .map(g => (
+                    <tr key={g.id} className="hover:bg-gray-50 transition group">
+                      <td className="px-10 py-7">
+                        <div className="text-base font-black text-[#014227]">{g.name}</div>
+                        <div className="text-[10px] text-gray-400 font-bold uppercase">{g.id} • {g.package}</div>
+                      </td>
+                      <td className="px-10 py-7 text-xs font-black text-gray-600 uppercase tracking-tighter">
+                        {g.checkedInEvents?.map(eventId => {
+                          const evt = schedules.find(s => s.id === eventId);
+                          return (
+                            <div key={eventId} className="mb-1">{evt?.title || 'Unknown Event'}</div>
+                          );
+                        })}
+                      </td>
+                      <td className="px-10 py-7 text-[11px] font-mono text-gray-400 font-bold">{g.checkedInAt}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
         </div>
-      )}
+      ) : activeTab === 'Statistics' ? (
+      <div className="bg-white rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 p-8">
+        <h2 className="text-xl font-black text-[#014227] uppercase tracking-widest mb-6">Event Check-in Statistics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sortedDates.map(date => (
+            <div key={date} className="space-y-4">
+              <h3 className="text-sm font-black text-[#FFD700] uppercase tracking-widest border-b border-gray-100 pb-2">{date}</h3>
+              {groupedSchedules[date].map(s => {
+                const checkInCount = guests.filter(g => g.checkedInEvents?.includes(s.id)).length;
+                const totalGuests = guests.length;
+                const percentage = totalGuests > 0 ? Math.round((checkInCount / totalGuests) * 100) : 0;
+
+                return (
+                  <div key={s.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="text-[10px] font-bold text-gray-400 uppercase">{s.time}</div>
+                        <div className="text-xs font-black text-[#014227] uppercase leading-tight mt-1">{s.title}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-black text-[#014227]">{checkInCount}</div>
+                        <div className="text-[8px] font-bold text-gray-400 uppercase">Check-ins</div>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2 overflow-hidden">
+                      <div className="bg-[#014227] h-full rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
+                    </div>
+                    <div className="text-[8px] font-bold text-gray-400 uppercase text-right mt-1">{percentage}% Attendance</div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      ) : null}
       <style>{`
         @keyframes scan-line { 0% { top: 10%; opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { top: 90%; opacity: 0; } }
         .animate-scan-line { animation: scan-line 2.5s ease-in-out infinite; }

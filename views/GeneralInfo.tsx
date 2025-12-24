@@ -24,9 +24,20 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
 
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(2); // Default to Sunday (Day 3)
 
-  const filteredSchedules = schedules.filter(item =>
-    item.date === EVENT_DATES[selectedDayIdx].date
-  );
+  const parseTime = (t: string) => {
+    const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return 0;
+    let h = parseInt(match[1]);
+    const m = parseInt(match[2]);
+    const period = match[3].toUpperCase();
+    if (period === 'PM' && h < 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  };
+
+  const filteredSchedules = schedules
+    .filter(item => item.date === EVENT_DATES[selectedDayIdx].date)
+    .sort((a, b) => parseTime(a.time) - parseTime(b.time));
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700 pb-20 md:pb-0">

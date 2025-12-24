@@ -59,7 +59,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [editingPackage, setEditingPackage] = useState<any>(null);
   const [packageEditData, setPackageEditData] = useState<{ oldName?: string; newName: string; category: PackageCategory }>({ newName: '', category: 'International' });
   const [isPermMetaModalOpen, setIsPermMetaModalOpen] = useState(false);
-  const [permMetaEditData, setPermMetaEditData] = useState<{ category: PackageCategory; id?: string; name: string; date: string; linkedItinerary?: string; golfType?: 'Day1' | 'Day2' }>({ category: 'International', name: '', date: '', linkedItinerary: '' });
+  const [permMetaEditData, setPermMetaEditData] = useState<{ category: PackageCategory; id?: string; name: string; date: string; linkedItinerary?: string[]; golfType?: 'Day1' | 'Day2' }>({ category: 'International', name: '', date: '', linkedItinerary: [] });
   const [selectedGolfers, setSelectedGolfers] = useState<string[]>([]);
 
   const activePackageTypes = Object.keys(packagePermissions) as PackageType[];
@@ -104,13 +104,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     if (id) {
       const idx = currentList.findIndex(p => p.id === id);
       if (idx > -1) {
-        const updatedRule: PermissionMeta = { id, name, date, linkedItinerary };
+        const updatedRule: PermissionMeta = { id, name, date, linkedItinerary: linkedItinerary || [] };
         if (golfType) updatedRule.golfType = golfType;
         currentList[idx] = updatedRule;
       }
     } else {
       const newId = `${category.toLowerCase().replace(/\s/g, '')}_${Date.now()}`;
-      currentList.push({ id: newId, name, date, linkedItinerary, golfType });
+      currentList.push({ id: newId, name, date, linkedItinerary: linkedItinerary || [], golfType });
       Object.keys(newPackagePermissions).forEach(pkg => {
         if (newPackagePermissions[pkg].category === category) {
           if (!newPackagePermissions[pkg].permissions) newPackagePermissions[pkg].permissions = {};
@@ -209,12 +209,28 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
   const sortedDatesFromSchedule = Array.from(new Set(schedules.map(s => s.date))).sort();
 
+  const parseTime = (t: string) => {
+    const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return 0;
+    let h = parseInt(match[1]);
+    const m = parseInt(match[2]);
+    const period = match[3].toUpperCase();
+    if (period === 'PM' && h < 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  };
+
   const groupedSchedules = schedules.reduce((groups, item) => {
     const date = item.date;
     if (!groups[date]) groups[date] = [];
     groups[date].push(item);
     return groups;
   }, {} as Record<string, EventSchedule[]>);
+
+  // Sort each group by time
+  Object.keys(groupedSchedules).forEach(date => {
+    groupedSchedules[date].sort((a, b) => parseTime(a.time) - parseTime(b.time));
+  });
 
   const sortedItineraryDates = Object.keys(groupedSchedules).sort((a, b) => {
     const parseDate = (d: string) => {
@@ -361,7 +377,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     <h3 className="text-lg font-black uppercase tracking-widest">{category} Pass Matrix</h3>
                     <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{pkgInCat.length} Active Packages</p>
                   </div>
-                  <button onClick={() => { setPermMetaEditData({ category, name: '', date: '' }); setIsPermMetaModalOpen(true); }} className="bg-[#FFD700] text-[#014227] px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-white transition"><Plus size={12} /> Add Rule</button>
+                  <button onClick={() => { setPermMetaEditData({ category, name: '', date: '', linkedItinerary: [] }); setIsPermMetaModalOpen(true); }} className="bg-[#FFD700] text-[#014227] px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-white transition"><Plus size={12} /> Add Rule</button>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -387,11 +403,18 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                           <th key={p.id} className="px-3 py-4 border-r border-gray-200 text-center group/header relative bg-white">
                             <div className="flex flex-col items-center min-w-[60px]">
                               <span className="text-[7px] font-black tracking-tighter mb-1 uppercase">{p.name}</span>
-                              {p.linkedItinerary && (
-                                <span className="text-[6px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">📅 {schedules.find(s => s.id === p.linkedItinerary)?.title || 'Event'}</span>
-                              )}
+                              {(() => {
+                                const links = Array.isArray(p.linkedItinerary) ? p.linkedItinerary : (p.linkedItinerary ? [p.linkedItinerary as string] : []);
+                                return links.map(id => (
+                                  <span key={id} className="text-[6px] text-blue-600 font-bold uppercase tracking-wider mt-0.5 block">📅 {schedules.find(s => s.id === id)?.title || 'Event'}</span>
+                                ));
+                              })()}
                               <div className="flex space-x-1 opacity-0 group-hover/header:opacity-100 transition absolute top-0 right-0 bg-white shadow-md p-1 rounded-bl-lg">
-                                <button onClick={() => { setPermMetaEditData({ ...p, category }); setIsPermMetaModalOpen(true); }} className="p-0.5 text-blue-600"><Edit3 size={10} /></button>
+                                <button onClick={() => {
+                                  const normalized = { ...p, linkedItinerary: Array.isArray(p.linkedItinerary) ? p.linkedItinerary : (p.linkedItinerary ? [p.linkedItinerary as string] : []) };
+                                  setPermMetaEditData({ ...normalized, category });
+                                  setIsPermMetaModalOpen(true);
+                                }} className="p-0.5 text-blue-600"><Edit3 size={10} /></button>
                                 <button
                                   onClick={() => {
                                     console.log('Admin: Rule Delete Clicked', { id: p.id, deleteConfirm });
@@ -1128,17 +1151,43 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                 <FormField label="Rule Label (e.g. Banquet)" value={permMetaEditData.name} onChange={v => setPermMetaEditData({ ...permMetaEditData, name: v })} />
                 <FormField label="Designated Day (e.g. 29 Mar)" value={permMetaEditData.date} onChange={v => setPermMetaEditData({ ...permMetaEditData, date: v })} />
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Linked Itinerary (Optional)</label>
-                  <select
-                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none"
-                    value={permMetaEditData.linkedItinerary || ''}
-                    onChange={e => setPermMetaEditData({ ...permMetaEditData, linkedItinerary: e.target.value })}
-                  >
-                    <option value="">No Linked Event</option>
-                    {schedules.map(s => (
-                      <option key={s.id} value={s.id}>{s.date} - {s.title}</option>
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Linked Itineraries (Optional)</label>
+                  <div className="max-h-48 overflow-y-auto space-y-4 p-4 bg-gray-50 border border-gray-100 rounded-2xl custom-scrollbar">
+                    {sortedItineraryDates.map(date => (
+                      <div key={date} className="space-y-2">
+                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-1 flex justify-between items-center">
+                          <span>{date}</span>
+                          <span className="text-[7px] text-gray-300">{(groupedSchedules[date] || []).length} ITEMS</span>
+                        </div>
+                        <div className="space-y-1">
+                          {(groupedSchedules[date] || []).map(s => {
+                            const isSelected = permMetaEditData.linkedItinerary?.includes(s.id);
+                            return (
+                              <label key={s.id} className={`flex items-center gap-3 p-2 rounded-xl border transition-all cursor-pointer hover:bg-white ${isSelected ? 'bg-white border-[#FFD700] ring-1 ring-[#FFD700]' : 'bg-transparent border-transparent'}`}>
+                                <div
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    const current = Array.isArray(permMetaEditData.linkedItinerary) ? permMetaEditData.linkedItinerary : (permMetaEditData.linkedItinerary ? [permMetaEditData.linkedItinerary as string] : []);
+                                    const next = isSelected
+                                      ? current.filter(id => id !== s.id)
+                                      : [...current, s.id];
+                                    setPermMetaEditData({ ...permMetaEditData, linkedItinerary: next });
+                                  }}
+                                  className={`w-4 h-4 rounded-md flex items-center justify-center transition-all ${isSelected ? 'bg-[#014227] text-[#FFD700]' : 'border border-gray-300 bg-white'}`}
+                                >
+                                  {isSelected && <Check size={10} />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[10px] font-bold text-[#014227] truncate">{s.title}</div>
+                                  <div className="text-[8px] font-bold text-gray-400 uppercase">{s.time}</div>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
                     ))}
-                  </select>
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Golf Flag (For Auto-Loading)</label>

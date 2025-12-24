@@ -19,8 +19,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewCha
     { id: 'Admin', label: 'Admin', icon: <ShieldCheck size={18} /> },
   ];
 
-  // Using the requested vertical black transparent logo
-  const logoPath = "images/Senate Golf Logo (Horizontal).png";
+  // Using the vertical white transparent logo for better contrast on dark green
+  const logoPath = "images/Senate Golf Logo_Vertical White (Transparent).png";
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FFFDF5]">
@@ -32,7 +32,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewCha
               <img
                 src={logoPath}
                 alt="30th ASPAC Senate Golf"
-                className="h-full object-contain filter brightness-0 invert"
+                className="h-full object-contain"
                 onError={(e) => {
                   // Fallback to text if image fails
                   (e.target as any).style.display = 'none';

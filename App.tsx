@@ -501,6 +501,7 @@ service cloud.firestore {
             }}
             schedules={schedules}
             packagePermissions={packagePermissions}
+            categoryPermissions={categoryPermissions}
           />
         )}
 

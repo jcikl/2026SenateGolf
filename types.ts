@@ -8,14 +8,14 @@ export interface PermissionMeta {
   id: string;
   name: string;
   date: string; // e.g., "28 Mar 2026"
-  linkedItinerary?: string; // Optional: linked EventSchedule.id
+  linkedItinerary?: string[]; // Optional: linked EventSchedule.ids
   golfType?: 'Day1' | 'Day2'; // Optional: explicit golf day flag
 }
 
 export type PackagePermissions = Record<PackageType, {
   category: PackageCategory;
   permissions: Record<string, boolean>; // key is PermissionMeta.id
-  linkedItinerary?: string; // Optional: linked EventSchedule.id
+  linkedItinerary?: string[]; // Optional: linked EventSchedule.ids
 }>;
 
 export interface Guest {
@@ -62,6 +62,7 @@ export interface Guest {
   hotelCheckIn?: string;
   hotelCheckOut?: string;
   checkedInAt?: string;
+  checkedInEvents?: string[]; // Track all events checked in to
   checkInCount: number;
 }
 
