@@ -202,6 +202,11 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
               <tbody className="divide-y divide-gray-50">
                 {sortedDates.map(date => (
                   <React.Fragment key={date}>
+                    <tr className="bg-gray-50 border-y border-gray-100">
+                      <td colSpan={4} className="px-8 py-3 text-xs font-black text-[#014227] uppercase tracking-widest bg-[#FFFBEB]/50">
+                        {date}
+                      </td>
+                    </tr>
                     {groupedSchedules[date].map(s => {
                       const count = guests.filter(g => g.checkedInEvents && g.checkedInEvents[s.id]).length;
                       return (
@@ -225,7 +230,7 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
         </div>
       )}
 
-      {activeTab === 'Scan' ? (
+      {activeTab === 'Scan' && (
         <div className="space-y-6">
           {!scannedGuest ? (
             <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 p-8 md:p-12 text-center group">
@@ -321,7 +326,8 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
             </div>
           )}
         </div>
-      ) : (
+      )}
+      {activeTab === 'History' && (
         <div className="bg-white rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
           <div className="p-8 border-b border-gray-100 bg-gray-50 flex items-center space-x-4">
             <Search className="text-gray-400" size={24} />
