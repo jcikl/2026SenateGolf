@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Guest, EventSchedule, PackagePermissions, GolfGrouping } from '../types';
+import { Guest, EventSchedule, PackagePermissions, GolfGrouping, PermissionMeta, PackageCategory } from '../types';
 import { MapPin, Calendar, Trophy, Coffee, AlertCircle, Shirt, Star } from 'lucide-react';
 
 interface GuestPortalProps {
@@ -8,13 +8,28 @@ interface GuestPortalProps {
   schedules: EventSchedule[];
   packagePermissions: PackagePermissions;
   golfGroupings: GolfGrouping[];
+  categoryPermissions: Record<PackageCategory, PermissionMeta[]>;
 }
 
-const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePermissions, golfGroupings }) => {
+const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePermissions, golfGroupings, categoryPermissions }) => {
   // Filter schedules based on package permissions
   const filteredSchedules = schedules.filter(item => {
-    const pkgInfo = packagePermissions[guest.package];
-    return pkgInfo ? pkgInfo.permissions[item.category] : true;
+    // 1. Direct Permission
+    if (packagePermissions[guest.package]?.permissions?.[item.permissionId] === true) return true;
+
+    // 2. Category Rules (Linked Itinerary)
+    const cat = packagePermissions[guest.package]?.category;
+    const categoryRules = categoryPermissions[cat] || [];
+
+    const grantingRule = categoryRules.find(rule => {
+      // Direct rule match
+      if (rule.id === item.permissionId) return true;
+      // Linked Itinerary match
+      const links = Array.isArray(rule.linkedItinerary) ? rule.linkedItinerary : (rule.linkedItinerary ? [rule.linkedItinerary] : []);
+      return links.includes(item.id);
+    });
+
+    return !!grantingRule;
   });
 
   return (
@@ -25,7 +40,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
         <div className="absolute top-10 right-10 opacity-30 animate-pulse"><Star size={120} className="text-white" /></div>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center pt-10 z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center pt-10 z-30">
           <div className="bg-white p-2 rounded-3xl shadow-2xl mb-4 transform group-hover:scale-105 transition duration-500">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${guest.id}`}
@@ -47,7 +62,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500 hover:shadow-xl">
+        <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500 hover:shadow-xl">
           <div className="w-12 h-12 bg-[#FFFBEB] text-[#014227] rounded-2xl flex items-center justify-center mb-3 group-hover:bg-[#014227] group-hover:text-[#FFD700] transition-all duration-300">
             <Coffee size={24} />
           </div>
@@ -60,7 +75,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
           (() => {
             const flight = golfGroupings.find(g => g.players.includes(guest.id))!;
             return (
-              <div className="bg-[#014227] p-6 rounded-[32px] shadow-lg border border-[#FFD700]/30 flex flex-col items-center text-center group relative overflow-hidden">
+              <div className="bg-[#014227] p-4 md:p-6 rounded-[32px] shadow-lg border border-[#FFD700]/30 flex flex-col items-center text-center group relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-20 h-20 bg-[#FFD700]/10 rounded-full -mr-10 -mt-10"></div>
                 <div className="w-12 h-12 bg-[#FFD700] text-[#014227] rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition">
                   <Trophy size={24} />
@@ -72,7 +87,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
             );
           })()
         ) : (
-          <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
+          <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
             <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-2xl flex items-center justify-center mb-3">
               <Trophy size={24} />
             </div>
@@ -83,7 +98,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
       </div>
 
       <div className="space-y-4">
-        <section className="bg-white rounded-[40px] shadow-sm border border-gray-100 p-8">
+        <section className="bg-white rounded-[40px] shadow-sm border border-gray-100 p-6 md:p-8">
           <h3 className="text-xl font-black text-[#014227] flex items-center space-x-3 mb-8">
             <Trophy className="text-[#FFD700]" size={24} />
             <span>Profile & Logistics</span>
@@ -102,7 +117,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
         </section>
 
         {(guest.foodPreference || guest.allergies) && (
-          <section className="bg-red-50 rounded-[40px] border border-red-100 p-8">
+          <section className="bg-red-50 rounded-[40px] border border-red-100 p-6 md:p-8">
             <h3 className="text-lg font-black flex items-center space-x-3 mb-4 text-red-900">
               <AlertCircle size={22} />
               <span>Safety & Dietary</span>
@@ -120,7 +135,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
           </section>
         )}
 
-        <section className="bg-white rounded-[40px] shadow-sm border border-gray-100 p-8">
+        <section className="bg-white rounded-[40px] shadow-sm border border-gray-100 p-6 md:p-8">
           <h3 className="text-xl font-black text-[#014227] flex items-center space-x-3 mb-8">
             <Calendar className="text-[#FFD700]" size={24} />
             <span>Permitted Events</span>
@@ -129,7 +144,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
             {filteredSchedules.length > 0 ? (
               filteredSchedules.slice(0, 10).map(item => (
                 <div key={item.id} className="flex group">
-                  <div className="w-20 shrink-0 relative">
+                  <div className="w-16 md:w-20 shrink-0 relative">
                     <p className="text-[10px] font-black text-[#014227] opacity-60 uppercase">{item.time.split(': ')[0]}</p>
                     <p className="text-[11px] font-black text-[#014227]">{item.time}</p>
                     <div className="absolute top-5 left-0 bottom-[-32px] w-[2px] bg-gray-100 group-last:hidden"></div>
@@ -151,7 +166,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
         </section>
       </div>
 
-      <button className="w-full bg-[#014227] text-[#FFD700] p-6 rounded-[30px] flex items-center justify-center space-x-3 font-black shadow-2xl transition transform hover:-translate-y-1 active:scale-95 uppercase tracking-[0.3em] text-xs">
+      <button className="w-full bg-[#014227] text-[#FFD700] p-4 md:p-6 rounded-[30px] flex items-center justify-center space-x-3 font-black shadow-2xl transition transform hover:-translate-y-1 active:scale-95 uppercase tracking-[0.3em] text-xs">
         <Star size={18} fill="#FFD700" />
         <span>Contact Event Concierge</span>
       </button>

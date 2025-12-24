@@ -283,7 +283,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       {activeAdminTab === 'Attendees' && (
         <div className="space-y-6">
           <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
-            <div className="p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center flex-wrap gap-4">
+            <div className="p-6 md:p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center flex-wrap gap-4">
               <div>
                 <h3 className="text-lg font-black uppercase tracking-widest">Attendee Registry</h3>
                 <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{guests.length} Registered Delegates</p>
@@ -307,7 +307,51 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                 </button>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="md:hidden p-4 space-y-4 bg-gray-50/50">
+              {guests.filter(g =>
+                g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                g.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                g.nation.toLowerCase().includes(searchQuery.toLowerCase())
+              ).map(guest => (
+                <div key={guest.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 relative group">
+                  <div className="absolute top-4 right-4 flex gap-2">
+                    <button onClick={() => setEditingItem({ type: 'Attendees', data: guest })} className="p-2 text-blue-600 bg-gray-50 rounded-xl hover:bg-blue-50"><Edit3 size={14} /></button>
+                    <button
+                      onClick={() => {
+                        if (deleteConfirm?.id === guest.id && deleteConfirm?.type === 'attendee') {
+                          onUpdateGuests(guests.filter(g => g.id !== guest.id));
+                          setDeleteConfirm(null);
+                        } else {
+                          setDeleteConfirm({ id: guest.id, type: 'attendee' });
+                        }
+                      }}
+                      className={`p-2 rounded-xl transition-all ${deleteConfirm?.id === guest.id && deleteConfirm?.type === 'attendee' ? 'bg-orange-500 text-white' : 'text-red-500 bg-gray-50'}`}
+                    >
+                      {deleteConfirm?.id === guest.id && deleteConfirm?.type === 'attendee' ? <AlertTriangle size={14} /> : <Trash2 size={14} />}
+                    </button>
+                  </div>
+
+                  <span className="bg-[#014227] text-[#FFD700] px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest mb-3 inline-block">{guest.package}</span>
+
+                  <div className="pr-16">
+                    <h4 className="font-black text-[#014227] text-lg leading-tight">{guest.name}</h4>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">{guest.id} • {guest.gender}</p>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                    <div>
+                      <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Nation</p>
+                      <p className="text-xs font-bold text-[#014227]">{guest.nation}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Organization</p>
+                      <p className="text-xs font-bold text-[#014227]">{guest.localOrg}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
                   <tr>
@@ -735,7 +779,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         <div className="space-y-10">
           {sortedItineraryDates.map(date => (
             <div key={date} className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
-              <div className="p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center sticky top-0 z-20">
+              <div className="p-6 md:p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center sticky top-0 z-20">
                 <div>
                   <h3 className="text-lg font-black uppercase tracking-widest">{date} Schedule</h3>
                   <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{groupedSchedules[date].length} Sessions Planned</p>
@@ -745,7 +789,39 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="md:hidden p-4 space-y-3 bg-gray-50/50">
+                {groupedSchedules[date].map(item => (
+                  <div key={item.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 relative group">
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      <button onClick={() => setEditingItem({ type: 'Itinerary', data: item })} className="p-2 text-blue-600 bg-gray-50 rounded-xl hover:bg-blue-50"><Edit3 size={14} /></button>
+                      <button
+                        onClick={() => {
+                          if (deleteConfirm?.id === item.id && deleteConfirm?.type === 'itinerary') {
+                            onUpdateSchedules(schedules.filter(s => s.id !== item.id));
+                            setDeleteConfirm(null);
+                          } else {
+                            setDeleteConfirm({ id: item.id, type: 'itinerary' });
+                          }
+                        }}
+                        className={`p-2 rounded-xl transition-all ${deleteConfirm?.id === item.id && deleteConfirm?.type === 'itinerary' ? 'bg-orange-500 text-white' : 'text-red-500 bg-gray-50'}`}
+                      >
+                        {deleteConfirm?.id === item.id && deleteConfirm?.type === 'itinerary' ? <AlertTriangle size={14} /> : <Trash2 size={14} />}
+                      </button>
+                    </div>
+
+                    <div className="pr-16 mb-2">
+                      <h4 className="font-black text-[#014227] text-lg leading-tight">{item.title}</h4>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                      <span className="flex items-center gap-1.5"><Clock size={12} className="text-[#FFD700]" /> {item.time}</span>
+                      <span className="flex items-center gap-1.5"><MapPin size={12} className="text-[#FFD700]" /> {item.location}</span>
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="bg-gray-50/50 text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
                     <tr>

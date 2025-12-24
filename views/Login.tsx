@@ -16,12 +16,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const logoPath = "images/Senate Golf Logo_Vertical Black (Transparent).png";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#014227] px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
       {/* Background Graphic elements inspired by the image branding */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#F58220] rounded-full opacity-5 blur-[120px]"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#FFD700] rounded-full opacity-10 blur-[120px]"></div>
 
-      <div className="max-w-md w-full bg-white rounded-[40px] shadow-2xl p-10 relative z-10 border border-[#FFD700]/20">
+      <div className="max-w-md w-full bg-white rounded-[40px] p-10 relative z-10 border border-[#FFD700]/20">
         <div className="text-center mb-10">
           <div className="w-full h-44 flex items-center justify-center mb-6">
             <img
@@ -29,7 +27,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               alt="30th ASPAC Senate Golf"
               className="h-full object-contain"
               onError={(e) => {
-                (e.target as any).src = "https://placehold.co/400x400/014227/FFD700?text=30th+ASPAC";
+                (e.target as any).src = "images/Senate Golf Logo_Vertical Black (Transparent).png";
               }}
             />
           </div>

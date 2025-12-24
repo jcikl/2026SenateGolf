@@ -72,9 +72,9 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
     const logsRef = collection(db, 'checkins');
 
     if (logFilterEventId) {
-      q = query(logsRef, where('eventId', '==', logFilterEventId), orderBy('createdAt', 'desc'), limit(50));
+      q = query(logsRef, where('eventId', '==', logFilterEventId), orderBy('createdAt', 'desc'), limit(500));
     } else {
-      q = query(logsRef, orderBy('createdAt', 'desc'), limit(50));
+      q = query(logsRef, orderBy('createdAt', 'desc'), limit(500));
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -112,7 +112,12 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
 
   const handleScan = (data: string) => {
     if (!data) return;
-    const guest = guests.find(g => g.id === data || g.name.toLowerCase() === data.toLowerCase());
+    const normalizedInput = data.trim().toLowerCase();
+    const guest = guests.find(g =>
+      g.id.toLowerCase() === normalizedInput ||
+      g.name.toLowerCase() === normalizedInput
+    );
+
     if (guest) {
       setScannedGuest(guest);
       setShowResult(null);
@@ -171,69 +176,76 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
   };
 
   return (
-    <div className="p-6 md:p-12 max-w-7xl mx-auto min-h-screen pb-32">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
-        <div>
+    <div>
+      <div>
+        <div className="hidden md:block">
           <h1 className="text-4xl md:text-6xl font-black text-[#014227] tracking-tighter mb-2">STAFF HUB<span className="text-[#FFD700]">.</span></h1>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Event Access Control System</p>
+          <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest">Event Access Control System</p>
         </div>
-        <div className="flex items-center space-x-4 mb-6 relative z-10">
-          <div className="bg-[#FFD700] text-[#014227] p-4 rounded-3xl shadow-xl transform -rotate-3"><Calendar size={28} /></div>
-          <div>
-            <h2 className="text-sm font-black uppercase tracking-[0.4em] text-[#FFD700]">Check-In Station</h2>
-            <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Current Event Segment Validation</p>
-          </div>
-        </div>
-        <select
-          value={selectedEventId}
-          onChange={(e) => setSelectedEventId(e.target.value)}
-          className="w-full bg-white/10 border border-white/20 rounded-3xl px-6 py-5 text-sm font-black outline-none focus:ring-8 focus:ring-[#FFD700]/20 appearance-none transition-all cursor-pointer hover:bg-white/20"
-        >
-          <option value="" className="text-gray-900">-- SELECT ACTIVE PROCESS FROM ITINERARY --</option>
-          {sortedDates.map(date => (
-            <optgroup key={date} label={date} className="text-gray-900 font-black">
-              {groupedSchedules[date].map(s => (
-                <option key={s.id} value={s.id} className="text-gray-900">
-                  {s.time} {'>>'} {s.title}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+
+
       </div>
 
-      <div className="flex bg-white rounded-[24px] shadow-xl p-1.5 border border-gray-100">
-        <button onClick={() => setActiveTab('Scan')} className={`flex-1 flex items-center justify-center space-x-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'Scan' ? 'bg-[#014227] text-[#FFD700] shadow-2xl' : 'text-gray-400'}`}>
-          <QrCode size={20} /><span>Scanner Mode</span>
+      <div className="flex bg-white rounded-[20px] md:rounded-[24px] shadow-xl p-1.5 border border-gray-100 mb-8 md:mb-12 overflow-x-auto">
+        <button onClick={() => setActiveTab('Scan')} className={`flex-1 min-w-[100px] flex items-center justify-center space-x-2 md:space-x-3 py-3 md:py-4 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'Scan' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400'}`}>
+          <QrCode size={16} className="md:w-5 md:h-5" /><span>Scan</span>
         </button>
-        <button onClick={() => setActiveTab('History')} className={`flex-1 flex items-center justify-center space-x-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'History' ? 'bg-[#014227] text-[#FFD700] shadow-2xl' : 'text-gray-400'}`}>
-          <History size={20} /><span>Recent Logs</span>
+        <button onClick={() => setActiveTab('History')} className={`flex-1 min-w-[100px] flex items-center justify-center space-x-2 md:space-x-3 py-3 md:py-4 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'History' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400'}`}>
+          <History size={16} className="md:w-5 md:h-5" /><span>Logs</span>
         </button>
-        <button onClick={() => setActiveTab('Stats')} className={`flex-1 flex items-center justify-center space-x-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'Stats' ? 'bg-[#014227] text-[#FFD700] shadow-2xl' : 'text-gray-400'}`}>
-          <CheckCircle size={20} /><span>Statistics</span>
+        <button onClick={() => setActiveTab('Stats')} className={`flex-1 min-w-[100px] flex items-center justify-center space-x-2 md:space-x-3 py-3 md:py-4 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'Stats' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400'}`}>
+          <CheckCircle size={16} className="md:w-5 md:h-5" /><span>Stats</span>
         </button>
       </div>
 
       {activeTab === 'Stats' && (
-        <div className="bg-white rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
-          <div className="p-8 border-b border-gray-100 bg-gray-50">
-            <h3 className="text-xl font-black text-[#014227] uppercase tracking-widest">Event Check-in Statistics</h3>
+        <div className="bg-white rounded-[30px] md:rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
+          <div className="p-6 md:p-8 border-b border-gray-100 bg-gray-50">
+            <h3 className="text-lg md:text-xl font-black text-[#014227] uppercase tracking-widest">Event Statistics</h3>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-[#FFFBEB] text-[11px] font-black text-[#014227] uppercase tracking-widest">
+          {/* Mobile View */}
+          <div className="md:hidden">
+            {sortedDates.map(date => (
+              <div key={date}>
+                <div className="bg-[#FFFBEB] px-6 py-3 text-[10px] font-black text-[#014227] uppercase tracking-widest border-y border-gray-100">
+                  {date}
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {groupedSchedules[date].map(s => {
+                    const count = guests.filter(g => g.checkedInEvents && g.checkedInEvents[s.id]).length;
+                    return (
+                      <div key={s.id} className="p-6 flex justify-between items-center">
+                        <div className="pr-4">
+                          <p className="text-[10px] font-bold text-gray-400 mb-1">{s.time}</p>
+                          <h4 className="text-xs font-black text-[#014227] leading-tight">{s.title}</h4>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black shrink-0 ${count > 0 ? 'bg-[#014227] text-[#FFD700]' : 'bg-gray-100 text-gray-400'}`}>
+                          {count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left min-w-[600px]">
+              <thead className="bg-[#FFFBEB] text-[10px] md:text-[11px] font-black text-[#014227] uppercase tracking-widest">
                 <tr>
-                  <th className="px-8 py-5">Date</th>
-                  <th className="px-8 py-5">Time</th>
-                  <th className="px-8 py-5">Event</th>
-                  <th className="px-8 py-5 text-right">Check-in Count</th>
+                  <th className="px-6 md:px-8 py-4 md:py-5">Date</th>
+                  <th className="px-6 md:px-8 py-4 md:py-5">Time</th>
+                  <th className="px-6 md:px-8 py-4 md:py-5">Event</th>
+                  <th className="px-6 md:px-8 py-4 md:py-5 text-right">Count</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {sortedDates.map(date => (
                   <React.Fragment key={date}>
                     <tr className="bg-gray-50 border-y border-gray-100">
-                      <td colSpan={4} className="px-8 py-3 text-xs font-black text-[#014227] uppercase tracking-widest bg-[#FFFBEB]/50">
+                      <td colSpan={4} className="px-6 md:px-8 py-3 text-[10px] md:text-xs font-black text-[#014227] uppercase tracking-widest bg-[#FFFBEB]/50">
                         {date}
                       </td>
                     </tr>
@@ -241,11 +253,11 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
                       const count = guests.filter(g => g.checkedInEvents && g.checkedInEvents[s.id]).length;
                       return (
                         <tr key={s.id} className="hover:bg-gray-50 transition">
-                          <td className="px-8 py-5 text-[11px] font-bold text-gray-500">{s.date}</td>
-                          <td className="px-8 py-5 text-[11px] font-bold text-gray-500">{s.time}</td>
-                          <td className="px-8 py-5 text-sm font-black text-[#014227]">{s.title}</td>
-                          <td className="px-8 py-5 text-right">
-                            <span className={`px-4 py-1 rounded-full text-xs font-black ${count > 0 ? 'bg-[#014227] text-[#FFD700]' : 'bg-gray-100 text-gray-400'}`}>
+                          <td className="px-6 md:px-8 py-4 md:py-5 text-[10px] md:text-[11px] font-bold text-gray-500">{s.date}</td>
+                          <td className="px-6 md:px-8 py-4 md:py-5 text-[10px] md:text-[11px] font-bold text-gray-500">{s.time}</td>
+                          <td className="px-6 md:px-8 py-4 md:py-5 text-xs md:text-sm font-black text-[#014227] whitespace-normal">{s.title}</td>
+                          <td className="px-6 md:px-8 py-4 md:py-5 text-right">
+                            <span className={`px-3 md:px-4 py-1 rounded-full text-[10px] md:text-xs font-black ${count > 0 ? 'bg-[#014227] text-[#FFD700]' : 'bg-gray-100 text-gray-400'}`}>
                               {count}
                             </span>
                           </td>
@@ -262,9 +274,35 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
 
       {activeTab === 'Scan' && (
         <div className="space-y-6">
+          <div className="w-full bg-[#014227] rounded-[30px] md:rounded-[40px] p-6 md:p-8 text-white shadow-2xl border-b-[6px] md:border-b-[10px] border-[#FFD700] relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 md:w-48 md:h-48 bg-[#FFD700]/5 rounded-full -mr-16 -mt-16 md:-mr-24 md:-mt-24"></div>
+            <div className="flex items-center space-x-4 mb-4 md:mb-6 relative z-10">
+              <div className="bg-[#FFD700] text-[#014227] p-3 md:p-4 rounded-2xl md:rounded-3xl shadow-xl transform -rotate-3"><Calendar size={20} className="md:w-7 md:h-7" /></div>
+              <div>
+                <h2 className="text-xs md:text-sm font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-[#FFD700]">Check-In Station</h2>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Current Event Segment</p>
+              </div>
+            </div>
+            <select
+              value={selectedEventId}
+              onChange={(e) => setSelectedEventId(e.target.value)}
+              className="w-full bg-white/10 border border-white/20 rounded-2xl md:rounded-3xl px-4 md:px-6 py-4 md:py-5 text-xs md:text-sm font-black outline-none focus:ring-4 md:focus:ring-8 focus:ring-[#FFD700]/20 appearance-none transition-all cursor-pointer hover:bg-white/20"
+            >
+              <option value="" className="text-gray-900">-- SELECT ACTIVE EVENT --</option>
+              {sortedDates.map(date => (
+                <optgroup key={date} label={date} className="text-gray-900 font-black">
+                  {groupedSchedules[date].map(s => (
+                    <option key={s.id} value={s.id} className="text-gray-900">
+                      {s.time} {'>>'} {s.title}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
           {!scannedGuest ? (
-            <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 p-8 md:p-12 text-center group">
-              <div className="w-full aspect-square max-w-sm mx-auto bg-black rounded-[50px] mb-8 md:mb-12 relative overflow-hidden flex flex-col items-center justify-center shadow-2xl border-4 border-gray-50">
+            <div className="bg-white rounded-[30px] md:rounded-[40px] shadow-sm border border-gray-100 p-6 md:p-12 text-center group">
+              <div className="w-full aspect-square max-w-[280px] md:max-w-sm mx-auto bg-black rounded-[30px] md:rounded-[50px] mb-8 md:mb-12 relative overflow-hidden flex flex-col items-center justify-center shadow-2xl border-4 border-gray-50">
                 {activeTab === 'Scan' && (
                   <Scanner
                     onScan={(result) => {
@@ -277,33 +315,35 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
                       finder: false
                     }}
                     styles={{
-                      container: { width: '100%', height: '100%', borderRadius: '40px' },
-                      video: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: '40px' }
+                      container: { width: '100%', height: '100%', borderRadius: '30px' },
+                      video: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: '30px' }
                     }}
                   />
                 )}
-                <div className="absolute inset-0 border-[6px] border-[#FFD700]/50 rounded-[50px] pointer-events-none"></div>
+                <div className="absolute inset-0 border-[6px] border-[#FFD700]/50 rounded-[30px] md:rounded-[50px] pointer-events-none"></div>
                 <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-red-500/80 blur-[2px] shadow-[0_0_10px_red] pointer-events-none animate-scan-line"></div>
               </div>
 
-              <h3 className="text-xl font-black text-[#014227] uppercase tracking-[0.2em] mb-6">Camera Active</h3>
+              <h3 className="text-lg md:text-xl font-black text-[#014227] uppercase tracking-[0.2em] mb-4 md:mb-6">Camera Active</h3>
 
-              <div className="flex gap-3 max-w-md mx-auto relative">
-                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                  <Search className="text-gray-400" size={16} />
+              <div className="flex flex-col md:flex-row gap-3 max-w-md mx-auto relative">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <Search className="text-gray-400" size={16} />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Guest ID / Name"
+                    className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl md:rounded-3xl pl-12 pr-6 py-4 md:py-5 font-black text-xs md:text-sm outline-none focus:border-[#FFD700] transition-colors uppercase"
+                    onKeyDown={e => e.key === 'Enter' && handleScan((e.target as any).value)}
+                  />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Manual Entry (Guest ID)"
-                  className="flex-1 bg-gray-50 border-2 border-gray-100 rounded-3xl pl-12 pr-6 py-5 font-black text-sm outline-none focus:border-[#FFD700] transition-colors uppercase"
-                  onKeyDown={e => e.key === 'Enter' && handleScan((e.target as any).value)}
-                />
                 <button
                   onClick={(e) => {
-                    const input = (e.currentTarget.previousElementSibling as HTMLInputElement).value;
-                    if (input) handleScan(input);
+                    const input = e.currentTarget.parentElement?.querySelector('input');
+                    if (input?.value) handleScan(input.value);
                   }}
-                  className="bg-[#014227] text-[#FFD700] px-8 py-5 rounded-3xl font-black text-[10px] uppercase shadow-xl hover:bg-black transition transform active:scale-95"
+                  className="bg-[#014227] text-[#FFD700] px-8 py-4 md:py-5 rounded-2xl md:rounded-3xl font-black text-[10px] uppercase shadow-xl hover:bg-black transition transform active:scale-95"
                 >
                   Verify
                 </button>
@@ -313,40 +353,40 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
           ) : (
             <div className="animate-in zoom-in-95 duration-300">
               {showResult ? (
-                <div className={`rounded-[50px] p-16 text-center shadow-2xl border-b-[12px] transform transition-all ${showResult.status === 'success' ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
-                  {showResult.status === 'success' ? <CheckCircle size={100} className="text-green-500 mx-auto mb-8 drop-shadow-lg" /> : <XCircle size={100} className="text-red-500 mx-auto mb-8 drop-shadow-lg" />}
-                  <h3 className={`text-4xl font-black uppercase mb-3 tracking-tighter ${showResult.status === 'success' ? 'text-green-900' : 'text-red-900'}`}>{showResult.status === 'success' ? 'Access Granted' : 'Verification Failed'}</h3>
-                  <p className="font-bold text-lg text-gray-600 max-w-md mx-auto">{showResult.message}</p>
-                  <button onClick={() => { setScannedGuest(null); setShowResult(null); }} className="mt-12 px-12 py-5 bg-white border-2 border-gray-100 rounded-[30px] text-[11px] font-black uppercase tracking-widest shadow-xl hover:bg-gray-50 transition">Process Next Delegate</button>
+                <div className={`rounded-[30px] md:rounded-[50px] p-8 md:p-16 text-center shadow-2xl border-b-[8px] md:border-b-[12px] transform transition-all ${showResult.status === 'success' ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                  {showResult.status === 'success' ? <CheckCircle size={80} className="text-green-500 mx-auto mb-6 md:mb-8 drop-shadow-lg md:w-[100px] md:h-[100px]" /> : <XCircle size={80} className="text-red-500 mx-auto mb-6 md:mb-8 drop-shadow-lg md:w-[100px] md:h-[100px]" />}
+                  <h3 className={`text-2xl md:text-4xl font-black uppercase mb-3 tracking-tighter ${showResult.status === 'success' ? 'text-green-900' : 'text-red-900'}`}>{showResult.status === 'success' ? 'Access Granted' : 'Verification Failed'}</h3>
+                  <p className="font-bold text-sm md:text-lg text-gray-600 max-w-md mx-auto mb-8">{showResult.message}</p>
+                  <button onClick={() => { setScannedGuest(null); setShowResult(null); }} className="px-8 md:px-12 py-4 md:py-5 bg-white border-2 border-gray-100 rounded-[20px] md:rounded-[30px] text-[10px] md:text-[11px] font-black uppercase tracking-widest shadow-xl hover:bg-gray-50 transition w-full md:w-auto">Process Next Delegate</button>
                 </div>
               ) : (
-                <div className="bg-white rounded-[50px] shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden border border-gray-100">
-                  <div className={`p-8 text-white font-black uppercase text-xs tracking-[0.3em] flex items-center justify-between ${validateAccess(scannedGuest) ? 'bg-[#014227]' : 'bg-red-600'}`}>
-                    <div className="flex items-center gap-3">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                <div className="bg-white rounded-[30px] md:rounded-[50px] shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden border border-gray-100">
+                  <div className={`p-6 md:p-8 text-white font-black uppercase text-[10px] md:text-xs tracking-[0.3em] flex items-center justify-between ${validateAccess(scannedGuest) ? 'bg-[#014227]' : 'bg-red-600'}`}>
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="md:w-6 md:h-6"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                       <span>{validateAccess(scannedGuest) ? 'Clearance Verified' : 'Security Alert'}</span>
                     </div>
-                    {(scannedGuest.allergies) && <div className="bg-white text-red-600 px-6 py-2 rounded-full text-[10px] font-black shadow-2xl animate-pulse">CRITICAL ALLERGY</div>}
+                    {(scannedGuest.allergies) && <div className="bg-white text-red-600 px-4 md:px-6 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-black shadow-2xl animate-pulse">CRITICAL ALLERGY</div>}
                   </div>
-                  <div className="p-12 space-y-10">
-                    <div className="flex justify-between items-start">
+                  <div className="p-6 md:p-12 space-y-6 md:space-y-10">
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                       <div>
-                        <p className="text-[11px] font-black text-[#FFD700] uppercase tracking-[0.2em] mb-2">{scannedGuest.package}</p>
-                        <h2 className="text-5xl font-black text-[#014227] tracking-tighter leading-none">{scannedGuest.name}</h2>
-                        <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.1em] mt-3">{scannedGuest.nation} • {scannedGuest.localOrg}</p>
+                        <p className="text-[10px] md:text-[11px] font-black text-[#FFD700] uppercase tracking-[0.2em] mb-1 md:mb-2">{scannedGuest.package}</p>
+                        <h2 className="text-3xl md:text-5xl font-black text-[#014227] tracking-tighter leading-none">{scannedGuest.name}</h2>
+                        <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-[0.1em] mt-2 md:mt-3">{scannedGuest.nation} • {scannedGuest.localOrg}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Check-in Terminal</p>
-                        <p className="text-xs font-black text-[#014227] bg-[#FFFBEB] px-6 py-3 rounded-[20px] border-2 border-amber-100 uppercase tracking-tighter">{selectedEvent?.title}</p>
+                      <div className="text-left md:text-right w-full md:w-auto">
+                        <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 md:mb-2">Check-in Terminal</p>
+                        <p className="text-[10px] md:text-xs font-black text-[#014227] bg-[#FFFBEB] px-4 md:px-6 py-2 md:py-3 rounded-[15px] md:rounded-[20px] border-2 border-amber-100 uppercase tracking-tighter inline-block">{selectedEvent?.title}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                       <ProfileField label="Merchandise / Kit" value={scannedGuest.tShirtSize} isHighlighted />
                       <ProfileField label="Seating Table" value={scannedGuest.dinnerTableNo || 'NOT ASSIGNED'} />
                     </div>
-                    <div className="flex space-x-6 pt-10 border-t border-gray-50">
-                      <button onClick={() => setScannedGuest(null)} className="flex-1 py-6 border-2 border-gray-100 text-gray-400 rounded-[30px] font-black text-[11px] uppercase tracking-widest hover:bg-gray-50 transition">Reject & Exit</button>
-                      <button onClick={processCheckIn} className={`flex-[2] text-white py-6 rounded-[30px] font-black text-[11px] uppercase tracking-widest shadow-2xl transform active:scale-95 transition-all ${validateAccess(scannedGuest) ? 'bg-[#014227] hover:bg-black' : 'bg-red-600'}`}>
+                    <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-6 pt-6 md:pt-10 border-t border-gray-50">
+                      <button onClick={() => setScannedGuest(null)} className="flex-1 py-4 md:py-6 border-2 border-gray-100 text-gray-400 rounded-[20px] md:rounded-[30px] font-black text-[10px] md:text-[11px] uppercase tracking-widest hover:bg-gray-50 transition">Reject & Exit</button>
+                      <button onClick={processCheckIn} className={`flex-[2] text-white py-4 md:py-6 rounded-[20px] md:rounded-[30px] font-black text-[10px] md:text-[11px] uppercase tracking-widest shadow-2xl transform active:scale-95 transition-all ${validateAccess(scannedGuest) ? 'bg-[#014227] hover:bg-black' : 'bg-red-600'}`}>
                         {validateAccess(scannedGuest) ? 'Confirm Admission' : 'Bypass Restriction'}
                       </button>
                     </div>
@@ -358,14 +398,14 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
         </div>
       )}
       {activeTab === 'History' && (
-        <div className="bg-white rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
-          <div className="p-8 border-b border-gray-100 bg-gray-50 flex items-center space-x-4">
-            <Search className="text-gray-400" size={24} />
-            <input type="text" placeholder="Search recent arrivals..." className="bg-transparent border-none outline-none flex-1 font-black text-sm text-[#014227]" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <div className="bg-white rounded-[30px] md:rounded-[40px] shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
+          <div className="p-6 md:p-8 border-b border-gray-100 bg-gray-50 flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+            <Search className="text-gray-400 hidden md:block" size={24} />
+            <input type="text" placeholder="Search recent arrivals..." className="bg-transparent border-b border-gray-200 md:border-none outline-none w-full md:flex-1 font-black text-sm text-[#014227] pb-2 md:pb-0" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
             <select
               value={logFilterEventId}
               onChange={(e) => setLogFilterEventId(e.target.value)}
-              className="bg-white border border-gray-200 rounded-2xl px-4 py-2 text-xs font-bold outline-none focus:border-[#014227] transition-all cursor-pointer"
+              className="w-full md:w-auto bg-white border border-gray-200 rounded-2xl px-4 py-2 text-xs font-bold outline-none focus:border-[#014227] transition-all cursor-pointer"
             >
               <option value="">All Events</option>
               {sortedDates.map(date => (
@@ -379,22 +419,51 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
               ))}
             </select>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-[#FFFBEB] text-[11px] font-black text-[#014227] uppercase tracking-widest"><tr><th className="px-10 py-5">Delegate Identity</th><th className="px-10 py-5">Station Log</th><th className="px-10 py-5">Timestamp</th></tr></thead>
+          {/* Mobile View */}
+          <div className="md:hidden divide-y divide-gray-50">
+            {recentLogs
+              .filter(log => !searchQuery || log.guestName.toLowerCase().includes(searchQuery.toLowerCase()) || log.guestId.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map(log => (
+                <div key={log.id} className="p-6 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-base font-black text-[#014227] leading-none mb-1">{log.guestName}</h4>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{log.guestId} • {log.guestPackage}</p>
+                    </div>
+                    <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 uppercase tracking-widest">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <div className="bg-[#FFFBEB] p-3 rounded-xl border border-[#FFD700]/20 flex items-center space-x-3">
+                    <div className="bg-[#FFD700] text-[#014227] p-1.5 rounded-lg"><CheckCircle size={12} /></div>
+                    <div>
+                      <p className="text-[9px] font-black text-[#014227] uppercase tracking-widest leading-none mb-0.5">Checked In</p>
+                      <p className="text-[10px] font-bold text-[#014227]/80 leading-none">{log.eventTitle}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-1 text-[9px] font-bold text-gray-300">
+                    <Calendar size={10} />
+                    <span>{new Date(log.timestamp).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+          </div>
+
+          {/* Desktop View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left min-w-[600px]">
+              <thead className="bg-[#FFFBEB] text-[10px] md:text-[11px] font-black text-[#014227] uppercase tracking-widest"><tr><th className="px-6 md:px-10 py-4 md:py-5">Delegate Identity</th><th className="px-6 md:px-10 py-4 md:py-5">Station Log</th><th className="px-6 md:px-10 py-4 md:py-5">Timestamp</th></tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {recentLogs
                   .filter(log => !searchQuery || log.guestName.toLowerCase().includes(searchQuery.toLowerCase()) || log.guestId.toLowerCase().includes(searchQuery.toLowerCase()))
                   .map(log => (
                     <tr key={log.id} className="hover:bg-gray-50 transition group">
-                      <td className="px-10 py-7">
-                        <div className="text-base font-black text-[#014227]">{log.guestName}</div>
-                        <div className="text-[10px] text-gray-400 font-bold uppercase">{log.guestId} • {log.guestPackage}</div>
+                      <td className="px-6 md:px-10 py-5 md:py-7">
+                        <div className="text-sm md:text-base font-black text-[#014227]">{log.guestName}</div>
+                        <div className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase">{log.guestId} • {log.guestPackage}</div>
                       </td>
-                      <td className="px-10 py-7 text-xs font-black text-gray-600 uppercase tracking-tighter">
+                      <td className="px-6 md:px-10 py-5 md:py-7 text-[10px] md:text-xs font-black text-gray-600 uppercase tracking-tighter">
                         {log.eventTitle}
                       </td>
-                      <td className="px-10 py-7 text-[11px] font-mono text-gray-400 font-bold">{new Date(log.timestamp).toLocaleString()}</td>
+                      <td className="px-6 md:px-10 py-5 md:py-7 text-[10px] md:text-[11px] font-mono text-gray-400 font-bold">{new Date(log.timestamp).toLocaleString()}</td>
                     </tr>
                   ))}
               </tbody>
@@ -411,9 +480,9 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
 };
 
 const ProfileField: React.FC<{ label: string, value: string, isHighlighted?: boolean }> = ({ label, value, isHighlighted }) => (
-  <div className="bg-gray-50 p-6 rounded-[30px] border border-gray-100 shadow-sm">
-    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{label}</p>
-    <p className={`text-2xl font-black leading-none ${isHighlighted ? 'text-[#014227]' : 'text-gray-900'}`}>{value}</p>
+  <div className="bg-gray-50 p-4 md:p-6 rounded-[20px] md:rounded-[30px] border border-gray-100 shadow-sm">
+    <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 md:mb-2">{label}</p>
+    <p className={`text-xl md:text-2xl font-black leading-none ${isHighlighted ? 'text-[#014227]' : 'text-gray-900'}`}>{value}</p>
   </div>
 );
 

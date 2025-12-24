@@ -481,7 +481,7 @@ service cloud.firestore {
 
         {view === 'Guest' && (
           activeGuest ? (
-            <GuestPortal guest={activeGuest} schedules={schedules} packagePermissions={packagePermissions} golfGroupings={golfGroupings} />
+            <GuestPortal guest={activeGuest} schedules={schedules} packagePermissions={packagePermissions} golfGroupings={golfGroupings} categoryPermissions={categoryPermissions} />
           ) : (
             <Login onLogin={(p, n) => {
               const found = guests.find(g => g.name.toLowerCase() === n.toLowerCase() && g.passportLast4 === p);

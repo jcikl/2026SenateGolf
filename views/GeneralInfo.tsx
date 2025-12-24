@@ -40,12 +40,12 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
     .sort((a, b) => parseTime(a.time) - parseTime(b.time));
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700 pb-20 md:pb-0">
+    <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-700 pb-20 md:pb-0">
       {/* Styled Hero Banner */}
       <div className="relative h-64 md:h-80 rounded-[40px] overflow-hidden shadow-2xl group bg-gradient-to-b from-[#FFD700] via-[#FFA500] to-[#FF8C00]">
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-[200px] font-black text-white/20 select-none tracking-tighter">30</div>
+          <div className="text-[120px] md:text-[200px] font-black text-white/20 select-none tracking-tighter">30</div>
         </div>
 
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[#014227] flex flex-col items-center justify-center px-6 text-center">
@@ -104,8 +104,8 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
             <div className="grid grid-cols-1 gap-4">
               {filteredSchedules.length > 0 ? (
                 filteredSchedules.map((item) => (
-                  <div key={item.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex items-start space-x-4 group hover:shadow-xl hover:border-[#FFD700]/30 transition-all duration-500">
-                    <div className="w-16 shrink-0 bg-[#FFFBEB] text-[#014227] rounded-2xl py-3 flex flex-col items-center justify-center group-hover:bg-[#014227] group-hover:text-[#FFD700] transition-all border border-[#FFD700]/20 px-2">
+                  <div key={item.id} className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex items-start space-x-3 md:space-x-4 group hover:shadow-xl hover:border-[#FFD700]/30 transition-all duration-500">
+                    <div className="w-12 md:w-16 shrink-0 bg-[#FFFBEB] text-[#014227] rounded-2xl py-3 flex flex-col items-center justify-center group-hover:bg-[#014227] group-hover:text-[#FFD700] transition-all border border-[#FFD700]/20 px-2">
                       <Clock size={14} className="opacity-50 mb-1" />
                       <span className="text-[10px] font-black mt-1 text-center leading-tight">
                         {item.time}
@@ -146,7 +146,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                       {place.dist}
                     </div>
                   </div>
-                  <div className="p-6">
+                  <div className="p-4 md:p-6">
                     <h4 className="font-black text-gray-900 mb-2 text-lg">{place.name}</h4>
                     <p className="text-xs text-gray-500 font-medium leading-relaxed">{place.desc}</p>
                     <button className="mt-5 w-full bg-[#014227] text-[#FFD700] py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:bg-black transition transform active:scale-95">
@@ -170,7 +170,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
 
               <div className="grid grid-cols-1 gap-4 text-left">
                 {diningGuide.map(item => (
-                  <div key={item.id} className="p-5 bg-[#FFFBEB] rounded-3xl border border-[#FFD700]/20 flex items-center justify-between group hover:border-[#014227] transition">
+                  <div key={item.id} className="p-4 md:p-5 bg-[#FFFBEB] rounded-3xl border border-[#FFD700]/20 flex items-center justify-between group hover:border-[#014227] transition">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-[#FFD700]/20 rounded-xl flex items-center justify-center text-[#014227]">
                         <Coffee size={20} />
@@ -194,7 +194,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
             <h3 className="text-2xl font-black text-[#014227] px-4 border-l-4 border-[#FFD700]">Day 1 Golf Drive Grouping</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {golfGroupings.filter(g => g.day === 1).sort((a, b) => a.flightNumber.localeCompare(b.flightNumber)).map(flight => (
-                <div key={flight.id} className="bg-white rounded-[32px] p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500">
+                <div key={flight.id} className="bg-white rounded-[32px] p-4 md:p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500">
                   <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                     <div>
                       <h4 className="text-lg font-black text-[#014227]">{flight.flightNumber}</h4>
@@ -239,7 +239,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
             <h3 className="text-2xl font-black text-[#014227] px-4 border-l-4 border-[#FFD700]">Day 2 Golf Drive Grouping</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {golfGroupings.filter(g => g.day === 2).sort((a, b) => a.flightNumber.localeCompare(b.flightNumber)).map(flight => (
-                <div key={flight.id} className="bg-white rounded-[32px] p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500">
+                <div key={flight.id} className="bg-white rounded-[32px] p-4 md:p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500">
                   <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                     <div>
                       <h4 className="text-lg font-black text-[#014227]">{flight.flightNumber}</h4>
@@ -280,7 +280,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
         )}
       </div>
 
-      <div className="bg-[#014227] rounded-[40px] p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
+      <div className="bg-[#014227] rounded-[40px] p-6 md:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFD700]/10 rounded-full -mr-32 -mt-32"></div>
         <div className="flex items-center space-x-6">
           <div className="w-20 h-20 bg-[#FFD700] rounded-3xl flex items-center justify-center shadow-xl rotate-3">
