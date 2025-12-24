@@ -202,7 +202,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                           {place.address && (
                             <div className="flex items-start gap-1.5 text-[8px] md:text-[10px] text-gray-500 font-medium">
                               <MapPin size={10} className="shrink-0 text-[#FFD700] mt-0.5" />
-                              <span className="line-clamp-1">{place.address}</span>
+                              <span>{place.address}</span>
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2 md:gap-3">
