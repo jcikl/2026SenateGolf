@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Guest, PackageType, PackageCategory, EventSchedule, PackagePermissions, PermissionMeta, GolfGrouping, Sponsorship } from '../types';
 import { Users, Filter, ClipboardPaste, X, CheckCircle2, Calendar, MapPin, Plus, Trash2, Edit3, Save, Check, Square, Edit, Tag, Clock, ChevronRight, RefreshCw, ChevronDown, AlertTriangle, Trophy, Megaphone, Armchair } from 'lucide-react';
+import { db } from '../firebase';
+import { doc, onSnapshot, increment, setDoc } from 'firebase/firestore';
 
 interface AdminPortalProps {
   guests: Guest[];
@@ -37,7 +39,7 @@ const SelectField: React.FC<{ label: string; value: string; onChange: (v: string
   </div>
 );
 
-type AdminView = 'Attendees' | 'Itinerary' | 'Packages' | 'Nearby' | 'Golf' | 'Sponsors & Partners' | 'Seating';
+type AdminView = 'Attendees' | 'Itinerary' | 'Packages' | 'Nearby' | 'Golf' | 'Sponsors & Partners' | 'Seating' | 'Analytics';
 
 const AdminPortal: React.FC<AdminPortalProps> = ({
   guests, onUpdateGuests, schedules, onUpdateSchedules, onBulkSync, attractions, onUpdateAttractions, diningGuide, onUpdateDining, packagePermissions, onUpdatePackagePermissions, categoryPermissions, onUpdateCategoryPermissions, golfGroupings, onUpdateGolfGroupings, sponsorships, onUpdateSponsorships
@@ -67,6 +69,29 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [isPermMetaModalOpen, setIsPermMetaModalOpen] = useState(false);
   const [permMetaEditData, setPermMetaEditData] = useState<{ category: PackageCategory; id?: string; name: string; date: string; linkedItinerary?: string[]; golfType?: 'Day1' | 'Day2'; dinnerType?: 'Welcome' | 'Gala' }>({ category: 'Int', name: '', date: '', linkedItinerary: [] });
   const [selectedGolfers, setSelectedGolfers] = useState<string[]>([]);
+  const [analytics, setAnalytics] = useState<{
+    pageViews: number;
+    delegateLogins: number;
+    nearbyClicks: Record<string, number>;
+    sponsorClicks: Record<string, number>;
+  }>({ pageViews: 0, delegateLogins: 0, nearbyClicks: {}, sponsorClicks: {} });
+
+  // Subscribe to analytics data
+  useEffect(() => {
+    const analyticsRef = doc(db, 'analytics', 'stats');
+    const unsubscribe = onSnapshot(analyticsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setAnalytics({
+          pageViews: data.pageViews || 0,
+          delegateLogins: data.delegateLogins || 0,
+          nearbyClicks: data.nearbyClicks || {},
+          sponsorClicks: data.sponsorClicks || {}
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const activePackageTypes = Object.keys(packagePermissions) as PackageType[];
 
@@ -282,7 +307,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       </div>
 
       <div className="flex bg-white rounded-3xl p-1 shadow-xl border border-gray-100 overflow-x-auto">
-        {(['Attendees', 'Itinerary', 'Packages', 'Nearby', 'Golf', 'Sponsors & Partners', 'Seating'] as AdminView[]).map(tab => (
+        {(['Attendees', 'Itinerary', 'Packages', 'Nearby', 'Golf', 'Sponsors & Partners', 'Seating', 'Analytics'] as AdminView[]).map(tab => (
           <button key={tab} onClick={() => setActiveAdminTab(tab)} className={`flex-1 flex items-center justify-center space-x-2 py-3 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeAdminTab === tab ? 'bg-[#014227] text-[#FFD700] shadow-lg' : 'text-gray-400 hover:text-[#014227]'}`}>
             <span>{tab}</span>
           </button>
@@ -364,10 +389,14 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               <table className="w-full text-left">
                 <thead className="bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
                   <tr>
-                    <th className="px-8 py-4">Identity</th>
-                    <th className="px-8 py-4">Package</th>
-                    <th className="px-8 py-4">Country</th>
-                    <th className="px-8 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Identity</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Package</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Counntry/ LOM</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Contact Info</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Logistics</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Flags (Golf/Dinner)</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Seating & Stay</th>
+                    <th className="px-6 py-4 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -377,16 +406,46 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     g.country.toLowerCase().includes(searchQuery.toLowerCase())
                   ).map(guest => (
                     <tr key={guest.id} className="hover:bg-gray-50 transition group">
-                      <td className="px-8 py-6">
+                      <td className="px-6 py-6 whitespace-nowrap">
                         <div className="font-black text-[#014227]">{guest.name}</div>
                         <div className="text-[10px] font-bold text-gray-400 uppercase">{guest.id} • {guest.gender}</div>
+                        {guest.isSenator && <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest mt-1 block">Senator {guest.senatorshipId}</span>}
                       </td>
-                      <td className="px-8 py-6">
+                      <td className="px-6 py-6 whitespace-nowrap">
                         <span className="bg-[#014227] text-[#FFD700] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">{guest.package}</span>
                       </td>
-                      <td className="px-8 py-6">
+                      <td className="px-6 py-6 whitespace-nowrap">
                         <div className="text-[10px] font-black uppercase text-[#014227]">{guest.country}</div>
                         <div className="text-[9px] font-bold text-gray-400 uppercase">{guest.localOrg}</div>
+                      </td>
+                      <td className="px-6 py-6 whitespace-nowrap space-y-1">
+                        <div className="text-[10px] font-bold text-gray-600">{guest.email}</div>
+                        <div className="text-[9px] text-gray-400 font-medium">{guest.phone}</div>
+                        <div className="flex gap-2 text-[9px]">
+                          {guest.whatsapp && <span className="text-green-600 font-bold">WA: {guest.whatsapp}</span>}
+                          {guest.lineID && <span className="text-green-600 font-bold">Line: {guest.lineID}</span>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-6 whitespace-nowrap space-y-1">
+                        <div className="text-[10px] font-bold text-[#014227]">Shirt: {guest.tShirtSize}</div>
+                        <div className={`text-[9px] font-bold uppercase ${guest.foodPreference !== 'Vegetarian' ? 'text-gray-400' : 'text-green-600'}`}>{guest.foodPreference}</div>
+                        {guest.allergies && <div className="text-[9px] font-black text-red-500 uppercase max-w-[150px] truncate" title={guest.allergies}>⚠ {guest.allergies}</div>}
+                      </td>
+                      <td className="px-6 py-6 whitespace-nowrap space-y-1">
+                        {guest.golfProfileFlags && guest.golfProfileFlags.length > 0 && (
+                          <div className="text-[9px] font-black text-[#014227] uppercase">Golf: {guest.golfProfileFlags.join(', ')}</div>
+                        )}
+                        {guest.dinnerProfileFlags && guest.dinnerProfileFlags.length > 0 && (
+                          <div className="text-[9px] font-black text-amber-600 uppercase">Dinner: {guest.dinnerProfileFlags.join(', ')}</div>
+                        )}
+                        {!guest.golfProfileFlags?.length && !guest.dinnerProfileFlags?.length && <span className="text-gray-300 text-[9px] font-bold uppercase">-</span>}
+                      </td>
+                      <td className="px-6 py-6 whitespace-nowrap space-y-1">
+                        <div className="text-[9px] font-bold">W: {guest.welcomeDinnerTable || '-'} / G: {guest.galaDinnerTable || '-'}</div>
+                        {guest.hotelName && (
+                          <div className="text-[9px] font-bold text-blue-600 truncate max-w-[150px]" title={`${guest.hotelName} (${guest.hotelRoomType})`}>{guest.hotelName}</div>
+                        )}
+                        {guest.singleOccupancy && <span className="text-[8px] font-black text-gray-400 uppercase border border-gray-200 px-1 rounded">Single</span>}
                       </td>
                       <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
                         <div className="flex justify-end gap-2">
@@ -1508,6 +1567,77 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
+      {activeAdminTab === 'Analytics' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
+            <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-[#014227] to-[#014227]/90">
+              <h3 className="text-xl font-black text-[#FFD700] uppercase tracking-widest">Analytics Dashboard</h3>
+              <p className="text-[#FFD700]/70 text-xs font-bold uppercase tracking-widest mt-1">Track engagement and usage statistics</p>
+            </div>
+
+            <div className="p-8 space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200">
+                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Total Page Views</p>
+                  <p className="text-4xl font-black text-[#014227]">{analytics.pageViews.toLocaleString()}</p>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl border border-green-200">
+                  <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-2">Delegate Logins</p>
+                  <p className="text-4xl font-black text-[#014227]">{analytics.delegateLogins.toLocaleString()}</p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-2xl border border-amber-200">
+                  <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">Nearby Clicks</p>
+                  <p className="text-4xl font-black text-[#014227]">{Object.values(analytics.nearbyClicks).reduce((a, b) => a + b, 0).toLocaleString()}</p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border border-purple-200">
+                  <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-2">Sponsor Clicks</p>
+                  <p className="text-4xl font-black text-[#014227]">{Object.values(analytics.sponsorClicks).reduce((a, b) => a + b, 0).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Nearby Clicks Breakdown */}
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                <h4 className="text-sm font-black text-[#014227] uppercase tracking-widest mb-4">Nearby "Get Directions" Clicks</h4>
+                <div className="space-y-2">
+                  {Object.entries(analytics.nearbyClicks).length > 0 ? (
+                    Object.entries(analytics.nearbyClicks)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([name, count]) => (
+                        <div key={name} className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100">
+                          <span className="text-sm font-bold text-[#014227]">{name}</span>
+                          <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-black">{count} clicks</span>
+                        </div>
+                      ))
+                  ) : (
+                    <p className="text-gray-400 text-sm italic text-center py-4">No data yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Sponsor Clicks Breakdown */}
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                <h4 className="text-sm font-black text-[#014227] uppercase tracking-widest mb-4">Sponsor "Visit Site" Clicks</h4>
+                <div className="space-y-2">
+                  {Object.entries(analytics.sponsorClicks).length > 0 ? (
+                    Object.entries(analytics.sponsorClicks)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([name, count]) => (
+                        <div key={name} className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100">
+                          <span className="text-sm font-bold text-[#014227]">{name}</span>
+                          <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-black">{count} clicks</span>
+                        </div>
+                      ))
+                  ) : (
+                    <p className="text-gray-400 text-sm italic text-center py-4">No data yet</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editingItem && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-[40px] w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl border-4 border-[#014227]">
@@ -1876,9 +2006,9 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       {
         isPermMetaModalOpen && (
           <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-white rounded-[40px] w-full max-w-md p-10 shadow-2xl">
-              <h3 className="text-xl font-black text-[#014227] mb-8 uppercase tracking-widest">{permMetaEditData.id ? 'Modify' : 'New'} {permMetaEditData.category} Rule</h3>
-              <form onSubmit={handleAddOrUpdatePermMeta} className="space-y-6">
+            <div className="bg-white rounded-[20px] w-full max-w-md p-5 shadow-2xl">
+              <h3 className="text-xl font-black text-[#014227] uppercase tracking-widest">{permMetaEditData.id ? 'Modify' : 'New'} {permMetaEditData.category} Rule</h3>
+              <form onSubmit={handleAddOrUpdatePermMeta} className="space-y-1">
                 <FormField label="Rule Label (e.g. Banquet)" value={permMetaEditData.name} onChange={v => setPermMetaEditData({ ...permMetaEditData, name: v })} />
                 <FormField label="Designated Day (e.g. 29 Mar)" value={permMetaEditData.date} onChange={v => setPermMetaEditData({ ...permMetaEditData, date: v })} />
                 <div className="space-y-1">
@@ -1972,7 +2102,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     </button>
                   </div>
                 </div>
-                <div className="flex justify-end space-x-4 pt-6">
+                <div className="flex justify-end space-x-4">
                   <button type="button" onClick={() => setIsPermMetaModalOpen(false)} className="px-6 py-3 font-black text-[10px] uppercase text-gray-400">Back</button>
                   <button type="submit" className="bg-[#014227] text-[#FFD700] px-10 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transform active:scale-95">Save Rule</button>
                 </div>
@@ -1985,8 +2115,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       {
         isPackageModalOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-white rounded-[40px] w-full max-w-md p-10 shadow-2xl">
-              <h3 className="text-xl font-black text-[#014227] mb-8 uppercase tracking-widest">{packageEditData.oldName ? 'Edit' : 'Create'} Package</h3>
+            <div className="bg-white rounded-[20px] w-full max-w-md p-5 shadow-2xl">
+              <h3 className="text-xl font-black text-[#014227] uppercase tracking-widest">{packageEditData.oldName ? 'Edit' : 'Create'} Package</h3>
               <form onSubmit={handleAddOrUpdatePackage} className="space-y-6">
                 <FormField label="Unique Code" value={packageEditData.newName} onChange={v => setPackageEditData({ ...packageEditData, newName: v })} placeholder="VVIP-FULL" />
                 <div className="space-y-1">

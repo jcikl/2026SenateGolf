@@ -166,7 +166,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
             <span>Profile & Logistics</span>
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <InfoItem label="Country/ NOM" value={`${guest.country} / ${guest.localOrg}`} />
+            <InfoItem label="Country/ LOM" value={`${guest.country} / ${guest.localOrg}`} />
             <InfoItem label="Merchandise" value={`${guest.tShirtSize} Size T-Shirt`} icon={<Shirt size={14} />} />
             {guest.golfProfileFlags && guest.golfProfileFlags.length > 0 && (
               <>

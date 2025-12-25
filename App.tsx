@@ -21,6 +21,7 @@ import {
   writeBatch,
   FirestoreError
 } from "firebase/firestore";
+import { trackAnalytics } from './analytics';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('General');
@@ -44,6 +45,11 @@ const App: React.FC = () => {
   const [diningGuide, setDiningGuide] = useState<any[]>([]);
   const [sponsorships, setSponsorships] = useState<Sponsorship[]>([]);
   const [golfGroupings, setGolfGroupings] = useState<GolfGrouping[]>([]);
+
+  // Track page view on mount
+  useEffect(() => {
+    trackAnalytics('pageView');
+  }, []);
 
   // Handle Firebase errors globally
   const handleFirebaseError = (error: FirestoreError) => {
@@ -600,7 +606,7 @@ service cloud.firestore {
             onUpdateGuests={async (newList) => {
               setGuests(newList);
               const currentId = localStorage.getItem('lastScannedId');
-              const changed = newList.find(g => g.id === currentId);
+              const changed = newList.find(g => g.docId === currentId || g.id === currentId);
               if (changed) await syncGuestToCloud(changed);
             }}
             schedules={schedules}
