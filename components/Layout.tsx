@@ -20,20 +20,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
     { id: 'Admin', label: 'Admin', icon: <ShieldCheck size={18} /> },
   ];
 
-  // Using the vertical white transparent logo for better contrast on dark green
-  const logoPath = "/images/Senate Golf Logo_Vertical White (Transparent).png";
-  const mobileLogoPath = "/images/Senate Golf Logo_Vertical Black (Transparent).png";
+  // Using the horizontal logo for better header alignment
+  const logoPath = "/images/Senate Golf Logo (Horizontal).png";
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FFFDF5]">
       {/* Desktop Header - Updated to Theme Orange */}
       <header className="hidden md:block bg-[#F58220] text-white shadow-lg sticky top-0 z-50 border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
-          <div className="flex items-center space-x-4 cursor-pointer" onClick={() => onViewChange('General')}>
-            <div className="h-20 py-2">
+        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+          <div className="flex items-center cursor-pointer" onClick={() => onViewChange('General')}>
+            <div className="h-12">
               <img
                 src={logoPath}
-                alt="30th ASPAC Senate Golf"
+                alt="30th JCI ASPAC Senate Golf"
                 className="h-full object-contain"
                 onError={(e) => {
                   (e.target as any).style.display = 'none';
@@ -69,16 +68,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
         </div>
       </header>
 
-      {/* Mobile Top Header - Updated to Theme Orange */}
-      <header className="md:hidden bg-[#F58220] border-b border-white/10 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
-        <div className="h-10 flex items-center" onClick={() => onViewChange('General')}>
+      {/* Mobile Top Header - Dark Green with Horizontal Logo */}
+      <header className="md:hidden bg-[#014227] border-b border-white/10 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
+        <div className="h-8 flex items-center" onClick={() => onViewChange('General')}>
           <img src={logoPath} alt="Logo" className="h-full object-contain" />
         </div>
 
         {!isLoggedIn ? (
           <button
             onClick={() => onViewChange('Guest')}
-            className="bg-[#014227] text-[#FFD700] px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center space-x-2 animate-in fade-in slide-in-from-right-2 border border-white/10"
+            className="bg-[#F58220] text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center space-x-2 animate-in fade-in slide-in-from-right-2 border border-white/10"
           >
             <UserCheck size={14} />
             <span>Login</span>
@@ -91,12 +90,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
               title="Reset Session"
             >
               <LogOut size={20} />
-            </button>
-            <button
-              onClick={() => onViewChange('Guest')}
-              className={`p-2.5 rounded-2xl transition-all border shadow-sm ${currentView === 'Guest' ? 'bg-[#014227] border-[#014227] text-[#FFD700]' : 'bg-white/10 border-white/10 text-white'}`}
-            >
-              <UserCheck size={20} />
             </button>
           </div>
         )}
@@ -120,7 +113,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
             >
               {item.id === 'General' ? (
                 <img
-                  src="/images/Senate Golf Logo_Vertical White (Transparent).png"
+                  src={logoPath}
                   alt="Logo"
                   className={`object-contain transition-all ${currentView === item.id ? 'w-12 h-12' : 'w-10 h-10 brightness-0 invert'}`}
                 />
