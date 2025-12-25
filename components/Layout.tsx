@@ -20,9 +20,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
     { id: 'Admin', label: 'Admin', icon: <ShieldCheck size={18} /> },
   ];
 
-  // Using the vertical white transparent logo for better contrast on dark green
+  // Horizontal logo for headers
+  const headerLogoPath = "/images/Senate Golf Logo (Horizontal).png";
+  // Vertical white logo for dark backgrounds
   const logoPath = "/images/Senate Golf Logo_Vertical White (Transparent).png";
-  const mobileLogoPath = "/images/Senate Golf Logo_Vertical Black (Transparent).png";
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FFFDF5]">
@@ -30,9 +31,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
       <header className="hidden md:block bg-[#F58220] text-white shadow-lg sticky top-0 z-50 border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
           <div className="flex items-center space-x-4 cursor-pointer" onClick={() => onViewChange('General')}>
-            <div className="h-20 py-2">
+            <div className="h-16 py-2">
               <img
-                src={logoPath}
+                src={headerLogoPath}
                 alt="30th JCI ASPAC Senate Golf"
                 className="h-full object-contain"
                 onError={(e) => {
@@ -72,7 +73,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
       {/* Mobile Top Header - Updated to Theme Orange */}
       <header className="md:hidden bg-[#014227] border-b border-white/10 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
         <div className="h-10 flex items-center" onClick={() => onViewChange('General')}>
-          <img src={logoPath} alt="Logo" className="h-full object-contain" />
+          <img src={headerLogoPath} alt="Logo" className="h-full object-contain" />
         </div>
 
         {isLoggedIn && (
