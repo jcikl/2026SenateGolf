@@ -16,7 +16,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
   const navItems = [
     { id: 'General', label: 'Info Hub', icon: <Info size={18} /> },
     { id: 'Guest', label: 'My Portal', icon: <Home size={18} /> },
-    { id: 'Staff', label: 'Staff Hub', icon: <UserCheck size={18} /> },
+    { id: 'Staff', label: 'Crew Hub', icon: <UserCheck size={18} /> },
     { id: 'Admin', label: 'Admin', icon: <ShieldCheck size={18} /> },
   ];
 
@@ -112,7 +112,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
                   className={`object-contain transition-all ${currentView === item.id ? 'w-12 h-12' : 'w-10 h-10 brightness-0 invert'}`}
                 />
               ) : (
-                <>
+                <>{/* Crew Hub Icon fallback */}
                   {React.cloneElement(item.icon as React.ReactElement<any>, { size: currentView === item.id ? 24 : 22 })}
                   {currentView !== item.id && (
                     <span className="text-[9px] font-black mt-0.5 uppercase tracking-tighter">{item.label}</span>
