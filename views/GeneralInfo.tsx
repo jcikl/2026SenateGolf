@@ -35,14 +35,12 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
   const [nearbyFilter, setNearbyFilter] = useState('All');
 
-  const getMapPreview = (url: string) => {
+  const getLinkPreview = (url: string) => {
     if (!url) return null;
-    const isMap = url.includes('maps.google.com') || url.includes('goo.gl/maps') || url.includes('google.com/maps') || url.includes('maps.app.goo.gl');
-    if (isMap) {
-      // Use microlink to get the metadata thumbnail image (og:image)
-      return `https://api.microlink.io/?url=${encodeURIComponent(url)}&embed=image.url`;
-    }
-    return url;
+    // If it's a direct image URL (basic check), return as is
+    if (url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i)) return url;
+    // Otherwise use microlink to get the metadata thumbnail image (og:image)
+    return `https://api.microlink.io/?url=${encodeURIComponent(url)}&embed=image.url`;
   };
   const parseTime = (t: string) => {
     const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -97,7 +95,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                   </div>
 
                   {/* Logo Container - Filling available space */}
-                  <div className="relative w-full flex-1 flex items-center justify-center mb-4 z-10 min-h-0">
+                  <div className="relative w-full flex-1 flex items-center justify-center mb-4 z-10 min-h-0 pt-12 md:pt-14 px-8 md:px-12">
                     <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-32 bg-[#FFD700]/10 blur-3xl rounded-full pointer-events-none"></div>
                     <div className="relative h-full w-full flex items-center justify-center p-4">
                       <img
@@ -161,7 +159,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
         ))}
       </div>
 
-      <div className="min-h-[400px]">
+      <div>
         {activeTab === 'Itinerary' && (
           <div className="space-y-6 animate-in slide-in-from-bottom-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 border-l-4 border-[#FFD700]">
@@ -245,11 +243,11 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
               {[...attractions, ...diningGuide]
                 .filter(place => nearbyFilter === 'All' || (place.type || 'Other') === nearbyFilter)
                 .map(place => (
-                  <div key={place.id} className="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm border border-gray-100 group hover:shadow-xl transition-all duration-500 flex flex-row md:flex-col items-stretch">
+                  <div key={place.id} className="h-full bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm border border-gray-100 group hover:shadow-xl transition-all duration-500 flex flex-row md:flex-col items-stretch">
                     <div className="w-28 md:w-full md:h-32 shrink-0 relative bg-gray-50 flex items-center justify-center overflow-hidden">
                       {place.img && !imgErrors[place.id] ? (
                         <img
-                          src={getMapPreview(place.img) || ''}
+                          src={getLinkPreview(place.img) || ''}
                           alt={place.name}
                           className="w-full h-full object-cover transition duration-700 group-hover:scale-110"
                           onError={() => setImgErrors(prev => ({ ...prev, [place.id]: true }))}
@@ -427,23 +425,40 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                   <div className="h-px bg-gray-100 flex-1"></div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0">
                   {grouped[tier].map(sponsor => (
-                    <div key={sponsor.id} className="bg-white rounded-[40px] p-6 shadow-sm border border-gray-100 group hover:shadow-2xl hover:border-[#FFD700]/30 transition-all duration-500 flex flex-col items-center text-center">
-                      <div className="h-32 flex items-center justify-center mb-6 w-full px-4 transform group-hover:scale-110 transition duration-500">
-                        <img src={sponsor.logo} alt={sponsor.name} className="max-h-full max-w-full object-contain" />
+                    <div key={sponsor.id} className="h-full bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm border border-gray-100 group hover:shadow-xl transition-all duration-500 flex flex-row md:flex-col items-stretch">
+                      <div className="w-28 md:w-full md:h-32 shrink-0 relative bg-gray-50 flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none"></div>
+                        <img
+                          src={getLinkPreview(sponsor.website || sponsor.logo) || ''}
+                          alt={sponsor.name}
+                          className="w-full h-full object-cover transition duration-700 group-hover:scale-110"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            // If the current src is already the logo, don't try again to avoid infinite loop
+                            if (sponsor.logo && target.src !== sponsor.logo) {
+                              target.src = sponsor.logo;
+                            }
+                          }}
+                        />
                       </div>
-                      <h4 className="text-lg font-black text-[#014227] mb-2">{sponsor.name}</h4>
-                      <p className="text-xs text-gray-400 font-medium mb-4 line-clamp-2 px-2">{sponsor.description}</p>
-                      {sponsor.website && (
-                        <button
-                          onClick={() => window.open(sponsor.website, '_blank')}
-                          className="mt-auto flex items-center gap-2 text-[10px] font-black text-[#014227] uppercase tracking-widest hover:text-black transition"
-                        >
-                          <Globe size={14} className="text-[#FFD700]" />
-                          Official Site
-                        </button>
-                      )}
+                      <div className="flex-1 p-3 md:p-6 flex flex-col justify-between min-w-0">
+                        <div className="space-y-1">
+                          <span className="text-[7px] md:text-[9px] font-black uppercase text-[#014227]/40 tracking-wider block">Partner</span>
+                          <h4 className="font-black text-gray-900 text-sm md:text-lg truncate md:whitespace-normal">{sponsor.name}</h4>
+                          <p className="text-[9px] md:text-xs text-gray-400 font-medium leading-relaxed line-clamp-2 md:pt-1">{sponsor.description}</p>
+                        </div>
+                        {sponsor.website && (
+                          <button
+                            onClick={() => window.open(sponsor.website, '_blank')}
+                            className="mt-3 md:mt-5 w-full bg-[#014227] text-[#FFD700] py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black transition transform active:scale-95 flex items-center justify-center gap-2"
+                          >
+                            <Globe size={12} />
+                            Visit Site
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -458,7 +473,8 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
             </div>
           )}
         </div>
-      )}
+      )
+      }
 
       <div className="bg-[#014227] rounded-[40px] p-6 md:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFD700]/10 rounded-full -mr-32 -mt-32"></div>
@@ -475,7 +491,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
           Chat With Us
         </button>
       </div>
-    </div>
+    </div >
   );
 };
 
