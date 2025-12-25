@@ -6,19 +6,22 @@ interface LayoutProps {
   children: React.ReactNode;
   currentView: AppView;
   isLoggedIn?: boolean;
+  userRole?: UserRole;
   onViewChange: (view: AppView) => void;
   onLogout: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedIn, onViewChange, onLogout }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedIn, userRole = 'none', onViewChange, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
-  const navItems = [
-    { id: 'General', label: 'Info Hub', icon: <Info size={18} /> },
-    { id: 'Guest', label: 'My Portal', icon: <Home size={18} /> },
-    { id: 'Staff', label: 'Crew Hub', icon: <UserCheck size={18} /> },
-    { id: 'Admin', label: 'Admin', icon: <ShieldCheck size={18} /> },
+  const allNavItems = [
+    { id: 'General', label: 'Info Hub', icon: <Info size={18} />, roles: ['none', 'Guest', 'Crew', 'Admin'] },
+    { id: 'Guest', label: 'My Portal', icon: <Home size={18} />, roles: ['none', 'Guest', 'Crew', 'Admin'] },
+    { id: 'Staff', label: 'Crew Hub', icon: <UserCheck size={18} />, roles: ['Crew', 'Admin'] },
+    { id: 'Admin', label: 'Admin', icon: <ShieldCheck size={18} />, roles: ['Admin'] },
   ];
+
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
 
   // Horizontal logo for headers
   const headerLogoPath = "/images/Senate Golf Logo (Horizontal).png";

@@ -103,3 +103,5 @@ export interface GolfGrouping {
 }
 
 export type AppView = 'Guest' | 'Staff' | 'Admin' | 'General';
+
+export type UserRole = 'Guest' | 'Crew' | 'Admin' | 'none';

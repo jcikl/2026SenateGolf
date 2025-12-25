@@ -24,8 +24,9 @@ import {
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>('General');
-  const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [activeGuest, setActiveGuest] = useState<Guest | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>((localStorage.getItem('userRole') as UserRole) || 'none');
   const [packagePermissions, setPackagePermissions] = useState<PackagePermissions>({});
   const [categoryPermissions, setCategoryPermissions] = useState<Record<PackageCategory, PermissionMeta[]>>({
     'APDC': [],
@@ -539,8 +540,14 @@ service cloud.firestore {
       <Layout
         currentView={view}
         isLoggedIn={!!activeGuest}
-        onViewChange={(v) => { setView(v); localStorage.setItem('userRole', v); }}
-        onLogout={() => { setActiveGuest(null); setView('Guest'); localStorage.clear(); }}
+        userRole={userRole}
+        onViewChange={(v) => { setView(v); localStorage.setItem('appView', v); }}
+        onLogout={() => {
+          setActiveGuest(null);
+          setUserRole('none');
+          setView('General');
+          localStorage.clear();
+        }}
       >
         {view === 'General' && <GeneralInfo schedules={schedules} attractions={attractions} diningGuide={diningGuide} golfGroupings={golfGroupings} guests={guests} sponsorships={sponsorships} />}
 
@@ -549,11 +556,40 @@ service cloud.firestore {
             <GuestPortal guest={activeGuest} schedules={schedules} packagePermissions={packagePermissions} golfGroupings={golfGroupings} categoryPermissions={categoryPermissions} />
           ) : (
             <Login onLogin={(email, passId) => {
+              const semail = email.toLowerCase().trim();
+              const spass = passId.toLowerCase().trim();
+
+              // Special Rule: Admin
+              if (semail === 'admin' && spass === 'golf2026') {
+                const adminUser = { id: 'ADMIN', name: 'Administrator', email: 'admin', package: 'VIP' } as Guest;
+                setActiveGuest(adminUser);
+                setUserRole('Admin');
+                localStorage.setItem('userRole', 'Admin');
+                setView('Admin');
+                return;
+              }
+
+              // Special Rule: Crew
+              if (semail === 'crew' && spass === 'golf2026') {
+                const crewUser = { id: 'CREW', name: 'Event Crew', email: 'crew', package: 'VIP' } as Guest;
+                setActiveGuest(crewUser);
+                setUserRole('Crew');
+                localStorage.setItem('userRole', 'Crew');
+                setView('Staff');
+                return;
+              }
+
               const found = guests.find(g =>
-                g.email?.toLowerCase().trim() === email.toLowerCase().trim() &&
-                g.passportId?.toLowerCase().trim() === passId.toLowerCase().trim()
+                g.email?.toLowerCase().trim() === semail &&
+                g.passportId?.toLowerCase().trim() === spass
               );
-              if (found) handleSelectGuest(found); else alert('Guest not found or details mismatch.');
+              if (found) {
+                handleSelectGuest(found);
+                setUserRole('Guest');
+                localStorage.setItem('userRole', 'Guest');
+              } else {
+                alert('Guest not found or details mismatch.');
+              }
             }} />
           )
         )}
