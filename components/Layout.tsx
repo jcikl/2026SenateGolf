@@ -84,12 +84,21 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
             <span>Login</span>
           </button>
         ) : (
-          <button
-            onClick={() => onViewChange('Guest')}
-            className={`p-2.5 rounded-2xl transition-all border shadow-sm ${currentView === 'Guest' ? 'bg-[#014227] border-[#014227] text-[#FFD700]' : 'bg-white/10 border-white/10 text-white'}`}
-          >
-            <UserCheck size={20} />
-          </button>
+          <div className="flex items-center space-x-2 animate-in fade-in slide-in-from-right-2">
+            <button
+              onClick={onLogout}
+              className="bg-white/10 text-white p-2.5 rounded-2xl border border-white/10 active:bg-red-600/20 active:border-red-600/30"
+              title="Reset Session"
+            >
+              <LogOut size={20} />
+            </button>
+            <button
+              onClick={() => onViewChange('Guest')}
+              className={`p-2.5 rounded-2xl transition-all border shadow-sm ${currentView === 'Guest' ? 'bg-[#014227] border-[#014227] text-[#FFD700]' : 'bg-white/10 border-white/10 text-white'}`}
+            >
+              <UserCheck size={20} />
+            </button>
+          </div>
         )}
       </header>
 
