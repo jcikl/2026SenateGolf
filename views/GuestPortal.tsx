@@ -43,12 +43,6 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#FFD700]/20 to-[#F58220]/20 rounded-full -mr-32 -mt-32 animate-pulse"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#F58220]/10 to-transparent rounded-full -ml-24 -mb-24"></div>
 
-        {/* Top Badge (Package Type) */}
-        <div className="absolute top-6 left-6 flex items-center gap-2 bg-[#FFD700] text-[#014227] px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg z-20">
-          <Star size={12} className="fill-[#014227]" />
-          <span>{guest.package} Package</span>
-        </div>
-
         {/* QR & Info Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10">
           {/* QR Frame */}
@@ -63,8 +57,8 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
             </div>
           </div>
 
-          <div className="bg-[#F58220] px-4 py-1 rounded-full mb-4 shadow-lg transform -rotate-1">
-            <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Official Delegate</p>
+          <div className="bg-[#F58220] px-6 py-1.5 rounded-full mb-4 shadow-lg transform -rotate-1">
+            <p className="text-[11px] font-black text-white uppercase tracking-[0.3em]">{guest.package}</p>
           </div>
 
           {/* Identity Text */}
