@@ -26,15 +26,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FFFDF5]">
-      {/* Desktop Header - Nav back to Green, Logo area Orange */}
-      <header className="hidden md:block bg-[#014227] text-white shadow-lg sticky top-0 z-50 border-b border-[#FFD700]/30">
+      {/* Desktop Header - Updated to Theme Orange */}
+      <header className="hidden md:block bg-[#F58220] text-white shadow-lg sticky top-0 z-50 border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
-          <div className="flex items-center h-full cursor-pointer" onClick={() => onViewChange('General')}>
-            <div className="h-full bg-[#F58220] px-6 flex items-center shadow-inner">
+          <div className="flex items-center space-x-4 cursor-pointer" onClick={() => onViewChange('General')}>
+            <div className="h-20 py-2">
               <img
                 src={logoPath}
                 alt="30th JCI ASPAC Senate Golf"
-                className="h-20 object-contain"
+                className="h-full object-contain"
                 onError={(e) => {
                   (e.target as any).style.display = 'none';
                   const fallback = (e.target as any).nextSibling;
@@ -49,7 +49,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
               <button
                 key={item.id}
                 onClick={() => onViewChange(item.id as AppView)}
-                className={`flex items-center space-x-2 text-xs font-black uppercase tracking-widest transition-all ${currentView === item.id ? 'text-[#FFD700] scale-105' : 'text-gray-300 hover:text-white'}`}
+                className={`flex items-center space-x-2 text-xs font-black uppercase tracking-widest transition-all ${currentView === item.id ? 'text-[#014227] scale-105' : 'text-white/80 hover:text-white'}`}
               >
                 {item.icon}
                 <span>{item.label}</span>
@@ -60,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
           <div className="flex items-center space-x-4">
             <button
               onClick={onLogout}
-              className="hidden md:flex items-center space-x-1 bg-white/10 hover:bg-red-600/80 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition border border-white/20"
+              className="hidden md:flex items-center space-x-1 bg-[#014227] text-[#FFD700] hover:bg-black px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition border border-[#014227]/20 shadow-md"
             >
               <LogOut size={14} />
               <span>Reset</span>
@@ -69,39 +69,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedI
         </div>
       </header>
 
-      {/* Mobile Top Header - Nav Green, Logo block Orange */}
-      <header className="md:hidden bg-[#014227] border-b border-[#FFD700]/20 flex items-center justify-between sticky top-0 z-50 shadow-md h-16">
-        <div className="h-full bg-[#F58220] px-4 flex items-center shadow-md" onClick={() => onViewChange('General')}>
-          <img src={logoPath} alt="Logo" className="h-10 object-contain" />
+      {/* Mobile Top Header - Updated to Theme Orange */}
+      <header className="md:hidden bg-[#014227] border-b border-white/10 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
+        <div className="h-10 flex items-center" onClick={() => onViewChange('General')}>
+          <img src={logoPath} alt="Logo" className="h-full object-contain" />
         </div>
 
-        <div className="px-4 flex items-center">
-          {!isLoggedIn ? (
+        {isLoggedIn && (
+          <div className="flex items-center space-x-2 animate-in fade-in slide-in-from-right-2">
             <button
-              onClick={() => onViewChange('Guest')}
-              className="bg-[#F58220] text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center space-x-2 animate-in fade-in slide-in-from-right-2 border border-white/10"
+              onClick={onLogout}
+              className="bg-white/10 text-white p-2.5 rounded-2xl border border-white/10 active:bg-red-600/20 active:border-red-600/30"
+              title="Reset Session"
             >
-              <UserCheck size={14} />
-              <span>Login</span>
+              <LogOut size={20} />
             </button>
-          ) : (
-            <div className="flex items-center space-x-2 animate-in fade-in slide-in-from-right-2">
-              <button
-                onClick={onLogout}
-                className="bg-white/10 text-white p-2.5 rounded-2xl border border-white/10 active:bg-red-600/20 active:border-red-600/30"
-                title="Reset Session"
-              >
-                <LogOut size={20} />
-              </button>
-              <button
-                onClick={() => onViewChange('Guest')}
-                className={`p-2.5 rounded-2xl transition-all border shadow-sm ${currentView === 'Guest' ? 'bg-[#FFD700]/20 border-[#FFD700] text-[#FFD700]' : 'bg-white/5 border-white/5 text-gray-400'}`}
-              >
-                <UserCheck size={20} />
-              </button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}

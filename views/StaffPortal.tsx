@@ -280,13 +280,13 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
 
       {activeTab === 'Scan' && (
         <div className="space-y-6">
-          <div className="w-full bg-[#014227] rounded-[30px] md:rounded-[40px] p-6 md:p-8 text-white shadow-2xl border-b-[6px] md:border-b-[10px] border-[#F58220] relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 md:w-48 md:h-48 bg-[#F58220]/5 rounded-full -mr-16 -mt-16 md:-mr-24 md:-mt-24"></div>
+          <div className="w-full bg-[#F58220] rounded-[30px] md:rounded-[40px] p-6 md:p-8 text-white shadow-2xl border-b-[6px] md:border-b-[10px] border-[#014227] relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 md:w-48 md:h-48 bg-white/10 rounded-full -mr-16 -mt-16 md:-mr-24 md:-mt-24"></div>
             <div className="flex items-center space-x-4 mb-4 md:mb-6 relative z-10">
-              <div className="bg-[#F58220] text-white p-3 md:p-4 rounded-2xl md:rounded-3xl shadow-xl transform -rotate-3"><Calendar size={20} className="md:w-7 md:h-7" /></div>
+              <div className="bg-[#014227] text-[#FFD700] p-3 md:p-4 rounded-2xl md:rounded-3xl shadow-xl transform -rotate-3"><Calendar size={20} className="md:w-7 md:h-7" /></div>
               <div>
-                <h2 className="text-xs md:text-sm font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-[#FFD700]">Check-In Station</h2>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Current Event Segment</p>
+                <h2 className="text-xs md:text-sm font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-white">Check-In Station</h2>
+                <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest mt-1">Current Event Segment</p>
               </div>
             </div>
             <select
