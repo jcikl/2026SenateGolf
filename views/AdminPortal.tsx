@@ -1427,7 +1427,24 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     <FormField label="Date (DD.MM.YYYY)" value={editingItem.data.date} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, date: v } })} />
                     <FormField label="Time Window" value={editingItem.data.time} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, time: v } })} />
                   </div>
-                  <FormField label="Event Heading" value={editingItem.data.title} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, title: v } })} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Event Heading" value={editingItem.data.title} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, title: v } })} />
+                    <FormField label="Location" value={editingItem.data.location} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, location: v } })} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Event Category" value={editingItem.data.category} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, category: v } })} placeholder="e.g. Official, Dining" />
+                    <FormField label="Permission ID" value={editingItem.data.permissionId} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, permissionId: v } })} placeholder="e.g. WELCOME_DINNER" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Description</label>
+                    <textarea
+                      className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all resize-none"
+                      rows={3}
+                      value={editingItem.data.description || ''}
+                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
+                      placeholder="Enter event details..."
+                    />
+                  </div>
                 </>
               )}
               {editingItem.type === 'Nearby' && (
