@@ -35,20 +35,20 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20 md:pb-0">
 
-      {/* VIP Identity Header - Premium Theme Sync */}
-      <div className="relative h-96 rounded-[40px] overflow-hidden shadow-2xl group border-4 border-[#014227] bg-[#014227]">
+      {/* VIP Identity Header - Switched to Vibrant Theme Orange */}
+      <div className="relative h-96 rounded-[40px] overflow-hidden shadow-2xl group border-4 border-[#F58220] bg-[#F58220]">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none"></div>
-        {/* Gradient Accents - Added Orange */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#FFD700]/20 to-[#F58220]/20 rounded-full -mr-32 -mt-32 animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#F58220]/10 to-transparent rounded-full -ml-24 -mb-24"></div>
+        {/* Gradient Accents - Gold/White for Orange background */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#FFD700]/30 to-white/10 rounded-full -mr-32 -mt-32 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-white/20 to-transparent rounded-full -ml-24 -mb-24"></div>
 
         {/* QR & Info Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10">
           {/* QR Frame */}
           <div className="relative mb-6">
-            <div className="absolute -inset-4 bg-[#F58220]/20 rounded-full blur-2xl group-hover:bg-[#FFD700]/40 transition duration-700"></div>
-            <div className="relative bg-white p-4 rounded-[20px] shadow-2xl transform transition duration-500 group-hover:scale-110 border-2 border-[#F58220]/10">
+            <div className="absolute -inset-4 bg-white/20 rounded-full blur-2xl group-hover:bg-[#FFD700]/40 transition duration-700"></div>
+            <div className="relative bg-white p-4 rounded-[20px] shadow-2xl transform transition duration-500 group-hover:scale-110 border-2 border-white/10">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${guest.docId || guest.id}`}
                 alt="QR Code"
@@ -57,20 +57,20 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
             </div>
           </div>
 
-          <div className="bg-[#F58220] px-6 py-1.5 rounded-full mb-4 shadow-lg transform -rotate-1">
-            <p className="text-[11px] font-black text-white uppercase tracking-[0.3em]">{guest.package}</p>
+          <div className="bg-[#014227] px-6 py-1.5 rounded-full mb-4 shadow-lg transform -rotate-1 border border-white/10">
+            <p className="text-[11px] font-black text-[#FFD700] uppercase tracking-[0.3em]">{guest.package}</p>
           </div>
 
           {/* Identity Text */}
           <div className="text-center space-y-1">
-            <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight leading-none drop-shadow-lg">{guest.name}</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight leading-none drop-shadow-xl">{guest.name}</h2>
             <div className="flex items-center justify-center space-x-2">
-              <span className="text-[11px] font-black text-[#FFD700] uppercase tracking-widest">ID: {guest.id}</span>
+              <span className="text-[11px] font-black text-white/80 uppercase tracking-widest">ID: {guest.id}</span>
               {guest.isSenator && (
                 <>
                   <span className="text-white/20 px-1">•</span>
-                  <span className="text-[11px] font-black text-[#F58220] uppercase tracking-widest flex items-center gap-1">
-                    <Star size={10} className="fill-[#F58220]" />
+                  <span className="text-[11px] font-black text-[#014227] uppercase tracking-widest flex items-center gap-1 bg-[#FFD700]/90 px-2 py-0.5 rounded-md shadow-sm">
+                    <Star size={10} className="fill-[#014227]" />
                     Senator
                   </span>
                 </>
@@ -79,8 +79,8 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
           </div>
         </div>
 
-        {/* Bottom Decorative Bar (Orange/Gold mix) */}
-        <div className="absolute bottom-0 inset-x-0 h-2 bg-gradient-to-r from-[#FFD700] via-[#F58220] to-[#FFD700] opacity-80"></div>
+        {/* Bottom Decorative Bar */}
+        <div className="absolute bottom-0 inset-x-0 h-2 bg-gradient-to-r from-white/0 via-white/40 to-white/0 opacity-80"></div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
