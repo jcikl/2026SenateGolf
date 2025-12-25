@@ -82,6 +82,7 @@ export interface EventSchedule {
   description: string;
   permissionId: string; // Links to PermissionMeta.id
   category: string; // Display category
+  mapLink?: string; // Optional: Navigation map link
 }
 
 // Added Sponsorship interface

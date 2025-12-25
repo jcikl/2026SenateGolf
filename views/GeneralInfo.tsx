@@ -198,10 +198,22 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
 
                       </div>
                       <p className="text-xs text-gray-500 font-medium mb-3">{item.description}</p>
-                      <div className="flex items-center text-[10px] font-black text-[#014227] uppercase tracking-widest opacity-70 group-hover:opacity-100 transition">
-                        <MapPin size={10} className="mr-1 text-[#FFD700]" />
-                        {item.location}
-                      </div>
+                      {item.mapLink ? (
+                        <button
+                          onClick={() => window.open(item.mapLink, '_blank')}
+                          className="flex items-center text-[10px] font-black text-[#014227] uppercase tracking-widest hover:text-black transition group/loc"
+                        >
+                          <MapPin size={10} className="mr-1 text-[#FFD700] group-hover/loc:animate-bounce" />
+                          <span className="border-b border-dashed border-[#014227]/30 group-hover/loc:border-[#014227] transition-all">
+                            {item.location}
+                          </span>
+                        </button>
+                      ) : (
+                        <div className="flex items-center text-[10px] font-black text-[#014227] uppercase tracking-widest opacity-70">
+                          <MapPin size={10} className="mr-1 text-[#FFD700]" />
+                          {item.location}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))

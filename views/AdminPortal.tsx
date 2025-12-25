@@ -1431,6 +1431,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     <FormField label="Event Heading" value={editingItem.data.title} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, title: v } })} />
                     <FormField label="Location" value={editingItem.data.location} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, location: v } })} />
                   </div>
+                  <FormField label="Navigation Map Link" value={editingItem.data.mapLink} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, mapLink: v } })} placeholder="https://maps.google.com/..." />
                   <div className="grid grid-cols-2 gap-4">
                     <FormField label="Event Category" value={editingItem.data.category} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, category: v } })} placeholder="e.g. Official, Dining" />
                     <FormField label="Permission ID" value={editingItem.data.permissionId} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, permissionId: v } })} placeholder="e.g. WELCOME_DINNER" />
