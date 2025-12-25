@@ -35,35 +35,63 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20 md:pb-0">
 
-      {/* VIP Identity Header - Updated to match GeneralInfo Theme */}
-      <div className="relative h-80 rounded-[40px] overflow-hidden shadow-2xl group bg-gradient-to-b from-[#FFD700] via-[#FFA500] to-[#FF8C00]">
-        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
-        <div className="absolute top-10 right-10 opacity-30 animate-pulse"><Star size={120} className="text-white" /></div>
+      {/* VIP Identity Header - Premium Theme Sync */}
+      <div className="relative h-96 rounded-[40px] overflow-hidden shadow-2xl group border-4 border-[#014227] bg-[#014227]">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none"></div>
+        {/* Gradient Accents - Added Orange */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#FFD700]/20 to-[#F58220]/20 rounded-full -mr-32 -mt-32 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#F58220]/10 to-transparent rounded-full -ml-24 -mb-24"></div>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center pt-10 z-30">
-          <div className="bg-white p-2 rounded-3xl shadow-2xl mb-4 transform group-hover:scale-105 transition duration-500">
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${guest.id}`}
-              alt="QR Code"
-              className="w-32 h-32 rounded-2xl"
-            />
-          </div>
-          <p className="text-[10px] font-black text-[#014227] uppercase tracking-[0.5em] bg-white/20 px-4 py-1 rounded-full backdrop-blur-sm">Official Delegate</p>
+        {/* Top Badge (Package Type) */}
+        <div className="absolute top-6 left-6 flex items-center gap-2 bg-[#FFD700] text-[#014227] px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg z-20">
+          <Star size={12} className="fill-[#014227]" />
+          <span>{guest.package} Package</span>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 h-[40%] bg-[#014227] flex flex-col items-center justify-center px-6 text-center z-20">
-          <h2 className="text-3xl font-black text-white mb-1 tracking-tight">{guest.name}</h2>
-          <div className="flex items-center space-x-2 opacity-80">
-            <span className="text-[10px] font-black text-[#FFD700] uppercase tracking-widest">{guest.package} Package</span>
-            <span className="text-[10px] text-white/50">•</span>
-            <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{guest.id}</span>
+        {/* QR & Info Content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10">
+          {/* QR Frame */}
+          <div className="relative mb-6">
+            <div className="absolute -inset-4 bg-[#F58220]/20 rounded-full blur-2xl group-hover:bg-[#FFD700]/40 transition duration-700"></div>
+            <div className="relative bg-white p-4 rounded-[40px] shadow-2xl transform transition duration-500 group-hover:scale-110 border-2 border-[#F58220]/10">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${guest.id}`}
+                alt="QR Code"
+                className="w-32 h-32 rounded-3xl"
+              />
+            </div>
+          </div>
+
+          <div className="bg-[#F58220] px-4 py-1 rounded-full mb-4 shadow-lg transform -rotate-1">
+            <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Official Delegate</p>
+          </div>
+
+          {/* Identity Text */}
+          <div className="text-center space-y-1">
+            <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight leading-none drop-shadow-lg">{guest.name}</h2>
+            <div className="flex items-center justify-center space-x-2">
+              <span className="text-[11px] font-black text-[#FFD700] uppercase tracking-widest">ID: {guest.id}</span>
+              {guest.isSenator && (
+                <>
+                  <span className="text-white/20 px-1">•</span>
+                  <span className="text-[11px] font-black text-[#F58220] uppercase tracking-widest flex items-center gap-1">
+                    <Star size={10} className="fill-[#F58220]" />
+                    Senator
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Bottom Decorative Bar (Orange/Gold mix) */}
+        <div className="absolute bottom-0 inset-x-0 h-2 bg-gradient-to-r from-[#FFD700] via-[#F58220] to-[#FFD700] opacity-80"></div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500 hover:shadow-xl">
-          <div className="w-12 h-12 bg-[#FFFBEB] text-[#014227] rounded-2xl flex items-center justify-center mb-3 group-hover:bg-[#014227] group-hover:text-[#FFD700] transition-all duration-300">
+        <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#F58220] transition duration-500 hover:shadow-xl">
+          <div className="w-12 h-12 bg-[#FFF7ED] text-[#F58220] rounded-2xl flex items-center justify-center mb-3 group-hover:bg-[#F58220] group-hover:text-white transition-all duration-300 shadow-inner">
             <Coffee size={24} />
           </div>
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Dinner Table</span>
@@ -75,14 +103,14 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
           (() => {
             const flight = golfGroupings.find(g => g.players.includes(guest.id))!;
             return (
-              <div className="bg-[#014227] p-4 md:p-6 rounded-[32px] shadow-lg border border-[#FFD700]/30 flex flex-col items-center text-center group relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-[#FFD700]/10 rounded-full -mr-10 -mt-10"></div>
-                <div className="w-12 h-12 bg-[#FFD700] text-[#014227] rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition">
+              <div className="bg-[#014227] p-4 md:p-6 rounded-[32px] shadow-lg border border-[#F58220]/30 flex flex-col items-center text-center group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-[#F58220]/10 rounded-full -mr-10 -mt-10"></div>
+                <div className="w-12 h-12 bg-[#F58220] text-white rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition shadow-lg">
                   <Trophy size={24} />
                 </div>
-                <span className="text-[9px] font-black text-[#FFD700]/60 uppercase tracking-widest mb-1">Day {flight.day} • {flight.flightNumber}</span>
+                <span className="text-[9px] font-black text-[#F58220] uppercase tracking-widest mb-1">Day {flight.day} • {flight.flightNumber}</span>
                 <p className="text-xl font-black text-white">{flight.teeTime}</p>
-                {flight.buggyNumber && <span className="text-[9px] font-bold text-[#FFD700] mt-1 bg-white/10 px-2 py-0.5 rounded">Buggy {flight.buggyNumber}</span>}
+                {flight.buggyNumber && <span className="text-[9px] font-bold text-white mt-1 bg-[#F58220] px-2 py-0.5 rounded shadow-sm">Buggy {flight.buggyNumber}</span>}
               </div>
             );
           })()

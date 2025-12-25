@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 
 interface LoginProps {
-  onLogin: (passportLast4: string, name: string) => void;
+  onLogin: (email: string, passportId: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [name, setName] = useState('');
-  const [passport, setPassport] = useState('');
+  const [email, setEmail] = useState('');
+  const [passportId, setPassportId] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(passport, name);
+    onLogin(email, passportId);
   };
 
   const logoPath = "/images/Senate Golf Logo_Vertical Black (Transparent).png";
@@ -41,26 +41,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label className="block text-[10px] font-black text-[#014227] uppercase tracking-widest ml-4">Registered Name</label>
+            <label className="block text-[10px] font-black text-[#014227] uppercase tracking-widest ml-4">Registered Email</label>
             <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-[25px] focus:ring-4 focus:ring-[#FFD700]/20 focus:border-[#FFD700] outline-none transition text-sm font-bold shadow-inner"
-              placeholder="As per registration..."
+              placeholder="Enter your email..."
               required
             />
           </div>
 
           <div className="space-y-2">
-            <label className="block text-[10px] font-black text-[#014227] uppercase tracking-widest ml-4">Passport (Last 4 digits)</label>
+            <label className="block text-[10px] font-black text-[#014227] uppercase tracking-widest ml-4">Passport / ID No.</label>
             <input
-              type="password"
-              maxLength={4}
-              value={passport}
-              onChange={(e) => setPassport(e.target.value)}
-              className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-[25px] focus:ring-4 focus:ring-[#FFD700]/20 focus:border-[#FFD700] outline-none transition tracking-[1em] text-lg font-black shadow-inner"
-              placeholder="••••"
+              type="text"
+              value={passportId}
+              onChange={(e) => setPassportId(e.target.value)}
+              className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-[25px] focus:ring-4 focus:ring-[#FFD700]/20 focus:border-[#FFD700] outline-none transition text-sm font-bold shadow-inner"
+              placeholder="As per registration..."
               required
             />
           </div>

@@ -16,6 +16,7 @@ import {
   onSnapshot,
   doc,
   setDoc,
+  addDoc,
   getDocs,
   writeBatch,
   FirestoreError
@@ -92,7 +93,7 @@ const App: React.FC = () => {
     // Listen to Guests
     const unsubGuests = onSnapshot(collection(db, "guests"),
       (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data() as Guest);
+        const data = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id } as Guest));
         setGuests(data);
         const savedGuestId = localStorage.getItem('guestId');
         if (savedGuestId) {
@@ -179,20 +180,39 @@ const App: React.FC = () => {
 
     // Find new or modified guests
     const toSync = updatedList.filter(ug => {
-      const existing = oldGuests.find(g => g.id === ug.id);
+      const existing = oldGuests.find(g => (g.docId && g.docId === ug.docId) || (g.id === ug.id));
       return !existing || JSON.stringify(existing) !== JSON.stringify(ug);
     });
 
     // Find deleted guests
-    const toDelete = oldGuests.filter(og => !updatedList.find(g => g.id === og.id));
+    const toDelete = oldGuests.filter(og => !updatedList.find(g => (g.docId && g.docId === og.docId) || (g.id === og.id)));
 
     if (toSync.length === 0 && toDelete.length === 0) return;
 
     console.log(`App: Syncing ${toSync.length} guests, deleting ${toDelete.length} from Firestore...`);
     try {
       const batch = writeBatch(db);
-      toSync.forEach(g => batch.set(doc(db, "guests", g.id), g));
-      toDelete.forEach(g => batch.delete(doc(db, "guests", g.id)));
+
+      toSync.forEach(g => {
+        const guestData = { ...g };
+        const dId = g.docId;
+        delete guestData.docId; // Don't store docId INSIDE the document data
+
+        if (dId) {
+          batch.set(doc(db, "guests", dId), guestData);
+        } else {
+          // If no docId, it's a new guest. Create a new doc with auto-ID
+          const newDocRef = doc(collection(db, "guests"));
+          batch.set(newDocRef, guestData);
+        }
+      });
+
+      toDelete.forEach(g => {
+        if (g.docId) {
+          batch.delete(doc(db, "guests", g.docId));
+        }
+      });
+
       await batch.commit();
       console.log('App: Guest sync completed.');
     } catch (e: any) {
@@ -203,7 +223,15 @@ const App: React.FC = () => {
 
   const syncGuestToCloud = async (guest: Guest) => {
     try {
-      await setDoc(doc(db, "guests", guest.id), guest);
+      const guestData = { ...guest };
+      const dId = guest.docId;
+      delete guestData.docId;
+
+      if (dId) {
+        await setDoc(doc(db, "guests", dId), guestData);
+      } else {
+        await addDoc(collection(db, "guests"), guestData);
+      }
     } catch (e: any) {
       handleFirebaseError(e);
     }
@@ -519,8 +547,11 @@ service cloud.firestore {
           activeGuest ? (
             <GuestPortal guest={activeGuest} schedules={schedules} packagePermissions={packagePermissions} golfGroupings={golfGroupings} categoryPermissions={categoryPermissions} />
           ) : (
-            <Login onLogin={(p, n) => {
-              const found = guests.find(g => g.name.toLowerCase() === n.toLowerCase() && g.passportLast4 === p);
+            <Login onLogin={(email, passId) => {
+              const found = guests.find(g =>
+                g.email?.toLowerCase().trim() === email.toLowerCase().trim() &&
+                g.passportId?.toLowerCase().trim() === passId.toLowerCase().trim()
+              );
               if (found) handleSelectGuest(found); else alert('Guest not found or details mismatch.');
             }} />
           )

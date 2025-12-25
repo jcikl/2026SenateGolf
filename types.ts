@@ -19,7 +19,8 @@ export type PackagePermissions = Record<PackageType, {
 }>;
 
 export interface Guest {
-  id: string; // Guest ID
+  docId?: string; // Firestore document ID
+  id: string; // Logical Guest ID (e.g. PKG-0001-JP)
   nameOnTag: string;
   name: string;
   gender: string;

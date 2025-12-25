@@ -149,7 +149,9 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     const finalData = { ...data, id: finalId };
 
     if (type === 'Attendees') {
-      const updatedGuests = isNew ? [...guests, finalData] : guests.map(g => g.id === finalId ? finalData : g);
+      const updatedGuests = isNew
+        ? [...guests, finalData]
+        : guests.map(g => (g.docId && g.docId === data.docId) || (g.id === data.id) ? finalData : g);
       console.log('Admin: Committing guest registry update:', updatedGuests);
       onUpdateGuests(updatedGuests);
     } else if (type === 'Itinerary') {
