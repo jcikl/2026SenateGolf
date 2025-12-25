@@ -388,7 +388,16 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                       <ProfileField label="Merchandise / Kit" value={scannedGuest.tShirtSize} isHighlighted />
-                      <ProfileField label="Seating Table" value={scannedGuest.dinnerTableNo || 'NOT ASSIGNED'} />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 flex flex-col justify-center">
+                          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Welcome Table</p>
+                          <p className="text-sm font-black text-[#014227]">{scannedGuest.welcomeDinnerTable || 'N/A'}</p>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 flex flex-col justify-center">
+                          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Gala Table</p>
+                          <p className="text-sm font-black text-[#014227]">{scannedGuest.galaDinnerTable || 'N/A'}</p>
+                        </div>
+                      </div>
                     </div>
                     <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-6 pt-6 md:pt-10 border-t border-gray-50">
                       <button onClick={() => setScannedGuest(null)} className="flex-1 py-4 md:py-6 border-2 border-gray-100 text-gray-400 rounded-[20px] md:rounded-[30px] font-black text-[10px] md:text-[11px] uppercase tracking-widest hover:bg-gray-50 transition">Reject & Exit</button>

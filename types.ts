@@ -61,7 +61,8 @@ export interface Guest {
   golfTeeOff?: string;
   golfFlightNo?: string;
   golfBuggyNo?: string;
-  dinnerTableNo?: string;
+  welcomeDinnerTable?: string;
+  galaDinnerTable?: string;
   hotelName?: string;
   hotelRoomType?: 'Single' | 'Twin' | 'Suite';
   hotelCheckIn?: string;

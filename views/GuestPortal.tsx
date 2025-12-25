@@ -84,39 +84,79 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
       </div>
 
       <div className="grid grid-cols-2 gap-4">
+        {/* Welcome Dinner Table */}
         <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#F58220] transition duration-500 hover:shadow-xl">
           <div className="w-12 h-12 bg-[#FFF7ED] text-[#F58220] rounded-2xl flex items-center justify-center mb-3 group-hover:bg-[#F58220] group-hover:text-white transition-all duration-300 shadow-inner">
             <Coffee size={24} />
           </div>
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Dinner Table</span>
-          <p className="text-2xl font-black text-[#014227]">{guest.dinnerTableNo || 'Waitlist'}</p>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Welcome Dinner</span>
+          <p className="text-2xl font-black text-[#014227]">{guest.welcomeDinnerTable || 'Waitlist'}</p>
         </div>
 
-        {/* Dynamic Golf Info */}
-        {golfGroupings.find(g => g.players.includes(guest.id)) ? (
-          (() => {
-            const flight = golfGroupings.find(g => g.players.includes(guest.id))!;
+        {/* Gala Dinner Table */}
+        <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#F58220] transition duration-500 hover:shadow-xl">
+          <div className="w-12 h-12 bg-[#FFF7ED] text-[#F58220] rounded-2xl flex items-center justify-center mb-3 group-hover:bg-[#F58220] group-hover:text-white transition-all duration-300 shadow-inner">
+            <Coffee size={24} />
+          </div>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gala Dinner</span>
+          <p className="text-2xl font-black text-[#014227]">{guest.galaDinnerTable || 'Waitlist'}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {/* Day 1 Golf Info */}
+        {(() => {
+          const flightDay1 = golfGroupings.find(g => g.day === 1 && g.players.includes(guest.id));
+          if (flightDay1) {
             return (
               <div className="bg-[#014227] p-4 md:p-6 rounded-[32px] shadow-lg border border-[#F58220]/30 flex flex-col items-center text-center group relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-20 h-20 bg-[#F58220]/10 rounded-full -mr-10 -mt-10"></div>
                 <div className="w-12 h-12 bg-[#F58220] text-white rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition shadow-lg">
                   <Trophy size={24} />
                 </div>
-                <span className="text-[9px] font-black text-[#F58220] uppercase tracking-widest mb-1">Day {flight.day} • {flight.flightNumber}</span>
-                <p className="text-xl font-black text-white">{flight.teeTime}</p>
-                {flight.buggyNumber && <span className="text-[9px] font-bold text-white mt-1 bg-[#F58220] px-2 py-0.5 rounded shadow-sm">Buggy {flight.buggyNumber}</span>}
+                <span className="text-[9px] font-black text-[#F58220] uppercase tracking-widest mb-1">Day 1 • {flightDay1.flightNumber}</span>
+                <p className="text-xl font-black text-white">{flightDay1.teeTime}</p>
+                {flightDay1.buggyNumber && <span className="text-[9px] font-bold text-white mt-1 bg-[#F58220] px-2 py-0.5 rounded shadow-sm">Buggy {flightDay1.buggyNumber}</span>}
               </div>
             );
-          })()
-        ) : (
-          <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
-            <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-2xl flex items-center justify-center mb-3">
-              <Trophy size={24} />
+          }
+          return (
+            <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
+              <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-2xl flex items-center justify-center mb-3">
+                <Trophy size={24} />
+              </div>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Day 1 Golf</span>
+              <p className="text-lg font-bold text-gray-400">Not Playing</p>
             </div>
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Golf Status</span>
-            <p className="text-lg font-bold text-gray-400">Not Playing</p>
-          </div>
-        )}
+          );
+        })()}
+
+        {/* Day 2 Golf Info */}
+        {(() => {
+          const flightDay2 = golfGroupings.find(g => g.day === 2 && g.players.includes(guest.id));
+          if (flightDay2) {
+            return (
+              <div className="bg-[#014227] p-4 md:p-6 rounded-[32px] shadow-lg border border-[#F58220]/30 flex flex-col items-center text-center group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-[#F58220]/10 rounded-full -mr-10 -mt-10"></div>
+                <div className="w-12 h-12 bg-[#F58220] text-white rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition shadow-lg">
+                  <Trophy size={24} />
+                </div>
+                <span className="text-[9px] font-black text-[#F58220] uppercase tracking-widest mb-1">Day 2 • {flightDay2.flightNumber}</span>
+                <p className="text-xl font-black text-white">{flightDay2.teeTime}</p>
+                {flightDay2.buggyNumber && <span className="text-[9px] font-bold text-white mt-1 bg-[#F58220] px-2 py-0.5 rounded shadow-sm">Buggy {flightDay2.buggyNumber}</span>}
+              </div>
+            );
+          }
+          return (
+            <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
+              <div className="w-12 h-12 bg-gray-50 text-gray-310 rounded-2xl flex items-center justify-center mb-3">
+                <Trophy size={24} />
+              </div>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Day 2 Golf</span>
+              <p className="text-lg font-bold text-gray-400">Not Playing</p>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="space-y-4">

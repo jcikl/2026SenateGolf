@@ -1392,6 +1392,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     </div>
                     <SelectField label="T-Shirt Size" value={editingItem.data.tShirtSize} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, tShirtSize: v } })} options={TSHIRT_SIZES} />
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Welcome Dinner Table" value={editingItem.data.welcomeDinnerTable || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, welcomeDinnerTable: v } })} placeholder="e.g., Table 12" />
+                    <FormField label="Gala Dinner Table" value={editingItem.data.galaDinnerTable || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, galaDinnerTable: v } })} placeholder="e.g., Table 05" />
+                  </div>
                   <div className="grid grid-cols-2 gap-4 pt-4">
                     <CheckboxField label="Golfer" checked={editingItem.data.isGolfParticipant} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, isGolfParticipant: v } })} />
                     <CheckboxField label="Single Occupancy" checked={editingItem.data.singleOccupancy} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, singleOccupancy: v } })} />
