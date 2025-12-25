@@ -560,8 +560,8 @@ service cloud.firestore {
               const spass = passId.toLowerCase().trim();
 
               // Special Rule: Admin
-              if (semail === 'admin' && spass === 'golf2026') {
-                const adminUser = { id: 'ADMIN', name: 'Administrator', email: 'admin', package: 'VIP' } as Guest;
+              if (semail === 'admin@golf.com' && spass === 'golf2026') {
+                const adminUser = { id: 'ADMIN', name: 'Administrator', email: 'admin@golf.com', package: 'VIP' } as Guest;
                 setActiveGuest(adminUser);
                 setUserRole('Admin');
                 localStorage.setItem('userRole', 'Admin');
@@ -570,8 +570,8 @@ service cloud.firestore {
               }
 
               // Special Rule: Crew
-              if (semail === 'crew' && spass === 'golf2026') {
-                const crewUser = { id: 'CREW', name: 'Event Crew', email: 'crew', package: 'VIP' } as Guest;
+              if (semail === 'crew@golf.com' && spass === 'golf2026') {
+                const crewUser = { id: 'CREW', name: 'Event Crew', email: 'crew@golf.com', package: 'VIP' } as Guest;
                 setActiveGuest(crewUser);
                 setUserRole('Crew');
                 localStorage.setItem('userRole', 'Crew');
