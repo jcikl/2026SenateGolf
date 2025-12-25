@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Guest, PackageType, PackageCategory, EventSchedule, PackagePermissions, PermissionMeta, GolfGrouping, Sponsorship } from '../types';
-import { Users, Filter, ClipboardPaste, X, CheckCircle2, Calendar, MapPin, Plus, Trash2, Edit3, Save, Check, Square, Edit, Tag, Clock, ChevronRight, RefreshCw, ChevronDown, AlertTriangle, Trophy, Megaphone } from 'lucide-react';
+import { Users, Filter, ClipboardPaste, X, CheckCircle2, Calendar, MapPin, Plus, Trash2, Edit3, Save, Check, Square, Edit, Tag, Clock, ChevronRight, RefreshCw, ChevronDown, AlertTriangle, Trophy, Megaphone, Armchair } from 'lucide-react';
 
 interface AdminPortalProps {
   guests: Guest[];
@@ -37,13 +37,15 @@ const SelectField: React.FC<{ label: string; value: string; onChange: (v: string
   </div>
 );
 
-type AdminView = 'Attendees' | 'Itinerary' | 'Packages' | 'Nearby' | 'Golf' | 'Sponsors';
+type AdminView = 'Attendees' | 'Itinerary' | 'Packages' | 'Nearby' | 'Golf' | 'Sponsors & Partners' | 'Seating';
 
 const AdminPortal: React.FC<AdminPortalProps> = ({
   guests, onUpdateGuests, schedules, onUpdateSchedules, onBulkSync, attractions, onUpdateAttractions, diningGuide, onUpdateDining, packagePermissions, onUpdatePackagePermissions, categoryPermissions, onUpdateCategoryPermissions, golfGroupings, onUpdateGolfGroupings, sponsorships, onUpdateSponsorships
 }) => {
   const [activeAdminTab, setActiveAdminTab] = useState<AdminView>('Attendees');
   const [activeGolfDay, setActiveGolfDay] = useState<1 | 2>(1);
+  const [activeSeatingDinner, setActiveSeatingDinner] = useState<'welcome' | 'gala'>('welcome');
+  const [selectedSeatingGuests, setSelectedSeatingGuests] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [pasteMode, setPasteMode] = useState<'guests' | 'nearby' | 'sponsors'>('guests');
@@ -63,7 +65,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [editingPackage, setEditingPackage] = useState<any>(null);
   const [packageEditData, setPackageEditData] = useState<{ oldName?: string; newName: string; category: PackageCategory }>({ newName: '', category: 'Int' });
   const [isPermMetaModalOpen, setIsPermMetaModalOpen] = useState(false);
-  const [permMetaEditData, setPermMetaEditData] = useState<{ category: PackageCategory; id?: string; name: string; date: string; linkedItinerary?: string[]; golfType?: 'Day1' | 'Day2' }>({ category: 'Int', name: '', date: '', linkedItinerary: [] });
+  const [permMetaEditData, setPermMetaEditData] = useState<{ category: PackageCategory; id?: string; name: string; date: string; linkedItinerary?: string[]; golfType?: 'Day1' | 'Day2'; dinnerType?: 'Welcome' | 'Gala' }>({ category: 'Int', name: '', date: '', linkedItinerary: [] });
   const [selectedGolfers, setSelectedGolfers] = useState<string[]>([]);
 
   const activePackageTypes = Object.keys(packagePermissions) as PackageType[];
@@ -99,7 +101,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
   const handleAddOrUpdatePermMeta = (e: React.FormEvent) => {
     e.preventDefault();
-    const { category, id, name, date, linkedItinerary, golfType } = permMetaEditData;
+    const { category, id, name, date, linkedItinerary, golfType, dinnerType } = permMetaEditData;
     if (!name.trim()) return;
     const newCatPerms = { ...categoryPermissions };
     const currentList = [...(newCatPerms[category] || [])];
@@ -110,11 +112,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       if (idx > -1) {
         const updatedRule: PermissionMeta = { id, name, date, linkedItinerary: linkedItinerary || [] };
         if (golfType) updatedRule.golfType = golfType;
+        if (dinnerType) updatedRule.dinnerType = dinnerType;
         currentList[idx] = updatedRule;
       }
     } else {
       const newId = `${category.toLowerCase().replace(/\s/g, '')}_${Date.now()}`;
-      currentList.push({ id: newId, name, date, linkedItinerary: linkedItinerary || [], golfType });
+      currentList.push({ id: newId, name, date, linkedItinerary: linkedItinerary || [], golfType, dinnerType });
       Object.keys(newPackagePermissions).forEach(pkg => {
         if (newPackagePermissions[pkg].category === category) {
           if (!newPackagePermissions[pkg].permissions) newPackagePermissions[pkg].permissions = {};
@@ -160,7 +163,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       onUpdateAttractions(isNew ? [...attractions, finalData] : attractions.map(a => a.id === finalId ? finalData : a));
     } else if (type === 'Golf') {
       onUpdateGolfGroupings(isNew ? [...golfGroupings, finalData] : golfGroupings.map(g => g.id === finalId ? finalData : g));
-    } else if (type === 'Sponsors') {
+    } else if (type === 'Sponsors & Partners') {
       onUpdateSponsorships(isNew ? [...sponsorships, finalData] : sponsorships.map(s => s.id === finalId ? finalData : s));
     }
     setEditingItem(null);
@@ -279,7 +282,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       </div>
 
       <div className="flex bg-white rounded-3xl p-1 shadow-xl border border-gray-100 overflow-x-auto">
-        {(['Attendees', 'Itinerary', 'Packages', 'Nearby', 'Golf', 'Sponsors'] as AdminView[]).map(tab => (
+        {(['Attendees', 'Itinerary', 'Packages', 'Nearby', 'Golf', 'Sponsors & Partners', 'Seating'] as AdminView[]).map(tab => (
           <button key={tab} onClick={() => setActiveAdminTab(tab)} className={`flex-1 flex items-center justify-center space-x-2 py-3 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeAdminTab === tab ? 'bg-[#014227] text-[#FFD700] shadow-lg' : 'text-gray-400 hover:text-[#014227]'}`}>
             <span>{tab}</span>
           </button>
@@ -546,6 +549,248 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
+      {activeAdminTab === 'Seating' && (
+        <div className="space-y-6 animate-in slide-in-from-bottom-4">
+          <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden">
+            <div className="p-8 bg-[#014227] text-[#FFD700] flex flex-col md:flex-row justify-between items-center gap-6">
+              <div>
+                <h3 className="text-lg font-black uppercase tracking-widest">Seating Dashboard</h3>
+                <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">Manage Dinner Arrangements</p>
+              </div>
+
+              {/* Dinner Selector */}
+              <div className="flex bg-[#FFFBEB]/10 p-1 rounded-2xl backdrop-blur-sm">
+                <button
+                  onClick={() => setActiveSeatingDinner('welcome')}
+                  className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSeatingDinner === 'welcome' ? 'bg-[#FFD700] text-[#014227] shadow-lg' : 'text-[#FFD700]/50 hover:text-[#FFD700]'}`}
+                >
+                  Welcome Dinner
+                </button>
+                <button
+                  onClick={() => setActiveSeatingDinner('gala')}
+                  className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSeatingDinner === 'gala' ? 'bg-[#FFD700] text-[#014227] shadow-lg' : 'text-[#FFD700]/50 hover:text-[#FFD700]'}`}
+                >
+                  Gala Dinner
+                </button>
+              </div>
+            </div>
+
+            <div className="p-8 bg-gray-50/50 min-h-[600px] pb-32">
+              {(() => {
+                // Group guests by table
+                const field = activeSeatingDinner === 'welcome' ? 'welcomeDinnerTable' : 'galaDinnerTable';
+                const targetDinnerType = activeSeatingDinner === 'welcome' ? 'Welcome' : 'Gala';
+
+                // Calculate eligible guests for this dinner based on package permissions
+                const validRuleIds = new Set<string>();
+                PACKAGE_CATEGORIES.forEach(cat => (categoryPermissions[cat] || []).forEach(p => { if (p.dinnerType === targetDinnerType) validRuleIds.add(p.id); }));
+
+                const eligibleGuests = guests.filter(g => {
+                  const manualFlag = g.dinnerProfileFlags?.includes(targetDinnerType as 'Welcome' | 'Gala');
+                  const perms = packagePermissions[g.package]?.permissions || {};
+                  const hasPerm = Object.keys(perms).some(pid => validRuleIds.has(pid));
+                  return manualFlag || hasPerm;
+                });
+
+                const grouped = eligibleGuests.reduce((acc, guest) => {
+                  const table = guest[field] || 'Unassigned';
+                  if (!acc[table]) acc[table] = [];
+                  acc[table].push(guest);
+                  return acc;
+                }, {} as Record<string, Guest[]>);
+
+                // Sort tables (numeric then alpha, Unassigned last)
+                const sortedTables = Object.keys(grouped).sort((a, b) => {
+                  if (a === 'Unassigned') return 1;
+                  if (b === 'Unassigned') return -1;
+                  // Try numeric sort
+                  const numA = parseInt(a);
+                  const numB = parseInt(b);
+                  if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                  return a.localeCompare(b);
+                });
+
+                const toggleSelection = (id: string) => {
+                  if (selectedSeatingGuests.includes(id)) {
+                    setSelectedSeatingGuests(selectedSeatingGuests.filter(x => x !== id));
+                  } else {
+                    setSelectedSeatingGuests([...selectedSeatingGuests, id]);
+                  }
+                };
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {/* Render Unassigned Panel First if exists */}
+                    {grouped['Unassigned'] && (
+                      <div className="col-span-full mb-8 bg-white rounded-[32px] border-2 border-dashed border-gray-200 p-6">
+                        <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <Users size={18} className="text-gray-400" />
+                          </div>
+                          <div>
+                            <h4 className="font-black text-gray-900 uppercase tracking-tight">Unassigned Guests</h4>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{grouped['Unassigned'].length} Pending</p>
+                          </div>
+                          <div className="ml-auto">
+                            <button
+                              onClick={() => {
+                                const unassignedIds = grouped['Unassigned'].map(g => g.id);
+                                const allSelected = unassignedIds.every(id => selectedSeatingGuests.includes(id));
+                                if (allSelected) {
+                                  setSelectedSeatingGuests(selectedSeatingGuests.filter(id => !unassignedIds.includes(id)));
+                                } else {
+                                  setSelectedSeatingGuests(Array.from(new Set([...selectedSeatingGuests, ...unassignedIds])));
+                                }
+                              }}
+                              className="text-[10px] font-black uppercase text-[#014227] hover:underline"
+                            >
+                              {grouped['Unassigned'].every(g => selectedSeatingGuests.includes(g.id)) ? 'Deselect All' : 'Select All Unassigned'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Group Unassigned by Country */}
+                        {(() => {
+                          const unassignedByCountry = grouped['Unassigned'].reduce((acc, guest) => {
+                            const country = guest.country || 'Unknown';
+                            if (!acc[country]) acc[country] = [];
+                            acc[country].push(guest);
+                            return acc;
+                          }, {} as Record<string, Guest[]>);
+
+                          // Sort guests by localOrg within each country
+                          Object.keys(unassignedByCountry).forEach(country => {
+                            unassignedByCountry[country].sort((a, b) => (a.localOrg || '').localeCompare(b.localOrg || ''));
+                          });
+
+                          return (
+                            <div className="space-y-6">
+                              {Object.keys(unassignedByCountry).sort().map(country => (
+                                <div key={country}>
+                                  <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">{country} ({unassignedByCountry[country].length})</h5>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    {unassignedByCountry[country].map(guest => (
+                                      <div
+                                        key={guest.id}
+                                        className={`flex items-center gap-3 p-3 rounded-xl border transition group cursor-pointer ${selectedSeatingGuests.includes(guest.id) ? 'bg-[#FFFBEB] border-[#FFD700]' : 'hover:bg-gray-50 border-transparent hover:border-gray-100'}`}
+                                        onClick={() => toggleSelection(guest.id)}
+                                      >
+                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedSeatingGuests.includes(guest.id) ? 'bg-[#014227] border-[#014227]' : 'border-gray-300 bg-white'}`}>
+                                          {selectedSeatingGuests.includes(guest.id) && <Check size={10} className="text-[#FFD700]" />}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <div className="font-bold text-[#014227] text-xs truncate">{guest.name}</div>
+                                          <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wide truncate">{guest.package} • {guest.localOrg || '-'}</div>
+                                        </div>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); setEditingItem({ type: 'Attendees', data: guest }); }}
+                                          className="text-gray-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition"
+                                        >
+                                          <Edit3 size={12} />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Render Tables */}
+                    {sortedTables.filter(t => t !== 'Unassigned').map(table => (
+                      <div key={table} className="bg-white rounded-[32px] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group h-fit">
+                        <div className="bg-[#FFFBEB] p-4 border-b border-[#FFD700]/10 flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-[#014227] text-[#FFD700] rounded-full flex items-center justify-center font-black text-xs shadow-md">
+                              {table}
+                            </div>
+                            <span className="text-xs font-black text-[#014227] uppercase tracking-wider">Table {table}</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-[#014227]/50 uppercase tracking-widest">{grouped[table].length} Seats</span>
+                        </div>
+                        <div className="p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                          {grouped[table].map((guest, idx) => (
+                            <div
+                              key={guest.id}
+                              className={`w-full flex items-center gap-3 p-2 rounded-xl transition group/item cursor-pointer ${selectedSeatingGuests.includes(guest.id) ? 'bg-[#FFFBEB]' : 'hover:bg-gray-50'}`}
+                              onClick={() => toggleSelection(guest.id)}
+                            >
+                              <div className={`w-3 h-3 rounded border flex items-center justify-center transition-colors shrink-0 ${selectedSeatingGuests.includes(guest.id) ? 'bg-[#014227] border-[#014227]' : 'border-gray-200 bg-white'}`}>
+                                {selectedSeatingGuests.includes(guest.id) && <Check size={8} className="text-[#FFD700]" />}
+                              </div>
+                              <div className="text-[9px] font-bold text-gray-300 w-4 text-center">{idx + 1}</div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-bold text-gray-900 text-xs truncate group-hover/item:text-[#014227] transition">{guest.name}</div>
+                                <div className="text-[8px] font-bold text-gray-400 uppercase tracking-wide truncate">{guest.package} • {guest.localOrg || '-'}</div>
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setEditingItem({ type: 'Attendees', data: guest }); }}
+                                className="text-gray-300 opacity-0 group-hover/item:opacity-100 hover:text-blue-600 transition"
+                              >
+                                <Edit3 size={10} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Batch Action Bar */}
+            {selectedSeatingGuests.length > 0 && (
+              <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+                <div className="bg-[#014227] text-white pl-6 pr-2 py-2 rounded-2xl shadow-2xl flex items-center gap-6 border border-[#FFD700]/20">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-[#FFD700] text-[#014227] w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px]">
+                      {selectedSeatingGuests.length}
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wide">Guests Selected</span>
+                  </div>
+
+                  <div className="h-8 w-px bg-white/10"></div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Table No."
+                      className="w-24 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-xs font-bold text-[#FFD700] placeholder:text-white/30 outline-none focus:border-[#FFD700] transition text-center"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const val = e.currentTarget.value;
+                          if (!val) return;
+                          // Apply bulk update
+                          const field = activeSeatingDinner === 'welcome' ? 'welcomeDinnerTable' : 'galaDinnerTable';
+                          const updatedGuests = guests.map(g => {
+                            if (selectedSeatingGuests.includes(g.id)) {
+                              return { ...g, [field]: val };
+                            }
+                            return g;
+                          });
+                          onUpdateGuests(updatedGuests);
+                          setSelectedSeatingGuests([]);
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => setSelectedSeatingGuests([])}
+                      className="p-2 hover:bg-white/10 rounded-lg text-white/50 hover:text-white transition"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {activeAdminTab === 'Golf' && (
         <div className="space-y-6">
           <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
@@ -569,9 +814,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               PACKAGE_CATEGORIES.forEach(cat => (categoryPermissions[cat] || []).forEach(p => { if (p.golfType === targetType) validRuleIds.add(p.id); }));
 
               const eligible = guests.filter(g => {
-                if (!g.isGolfParticipant) return false;
+                const manualFlag = g.golfProfileFlags?.includes(targetType);
                 const perms = packagePermissions[g.package]?.permissions || {};
-                return Object.keys(perms).some(pid => validRuleIds.has(pid));
+                const hasPerm = Object.keys(perms).some(pid => validRuleIds.has(pid));
+                return manualFlag || hasPerm;
               });
 
               const totalGolfers = eligible.length;
@@ -671,9 +917,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                 PACKAGE_CATEGORIES.forEach(cat => (categoryPermissions[cat] || []).forEach(p => { if (p.golfType === targetType) validRuleIds.add(p.id); }));
 
                 const eligibleGuests = guests.filter(g => {
-                  if (!g.isGolfParticipant) return false;
+                  const manualFlag = g.golfProfileFlags?.includes(targetType);
                   const perms = packagePermissions[g.package]?.permissions || {};
-                  return Object.keys(perms).some(pid => validRuleIds.has(pid));
+                  const hasPerm = Object.keys(perms).some(pid => validRuleIds.has(pid));
+                  return manualFlag || hasPerm;
                 }).sort((a, b) => a.name.localeCompare(b.name));
 
                 if (eligibleGuests.length === 0) return <div className="p-10 text-center text-gray-400 text-xs font-bold uppercase">No eligible golfers found</div>;
@@ -772,9 +1019,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                             PACKAGE_CATEGORIES.forEach(cat => (categoryPermissions[cat] || []).forEach(p => { if (p.golfType === targetType) validRuleIds.add(p.id); }));
 
                             const allIds = guests.filter(g => {
-                              if (!g.isGolfParticipant) return false;
+                              const manualFlag = g.golfProfileFlags?.includes(targetType);
                               const perms = packagePermissions[g.package]?.permissions || {};
-                              return Object.keys(perms).some(pid => validRuleIds.has(pid));
+                              const hasPerm = Object.keys(perms).some(pid => validRuleIds.has(pid));
+                              return manualFlag || hasPerm;
                             }).map(g => g.id);
                             setSelectedGolfers(allIds);
                           } else {
@@ -798,9 +1046,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     PACKAGE_CATEGORIES.forEach(cat => (categoryPermissions[cat] || []).forEach(p => { if (p.golfType === targetType) validRuleIds.add(p.id); }));
 
                     const eligibleGuests = guests.filter(g => {
-                      if (!g.isGolfParticipant) return false;
+                      const manualFlag = g.golfProfileFlags?.includes(targetType);
                       const perms = packagePermissions[g.package]?.permissions || {};
-                      return Object.keys(perms).some(pid => validRuleIds.has(pid));
+                      const hasPerm = Object.keys(perms).some(pid => validRuleIds.has(pid));
+                      return manualFlag || hasPerm;
                     }).sort((a, b) => a.name.localeCompare(b.name));
 
                     if (eligibleGuests.length === 0) return <tr><td colSpan={6} className="p-10 text-center text-gray-400 text-xs font-bold uppercase">No eligible golfers found for Day {activeGolfDay}</td></tr>;
@@ -1096,16 +1345,16 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
-      {activeAdminTab === 'Sponsors' && (
+      {activeAdminTab === 'Sponsors & Partners' && (
         <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
           <div className="p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center">
             <div>
-              <h3 className="text-lg font-black uppercase tracking-widest">Sponsorships</h3>
-              <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{sponsorships.length} Sponsors Listed</p>
+              <h3 className="text-lg font-black uppercase tracking-widest">Sponsors & Partners</h3>
+              <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{sponsorships.length} Partners Listed</p>
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setEditingItem({ type: 'Sponsors', data: { id: 'temp_' + Date.now(), name: '', tier: 'Gold', logo: '', website: '', description: '' } })}
+                onClick={() => setEditingItem({ type: 'Sponsors & Partners', data: { id: 'temp_' + Date.now(), name: '', tier: 'Gold', logo: '', website: '', description: '' } })}
                 className="bg-[#014227] border border-[#FFD700] text-[#FFD700] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FFD700] hover:text-[#014227] transition flex items-center gap-2"
               >
                 <Plus size={14} /> Add
@@ -1137,7 +1386,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                   {grouped[tier].map(sponsor => (
                     <div key={sponsor.id} className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 relative group">
                       <div className="absolute top-4 right-4 flex gap-2">
-                        <button onClick={() => setEditingItem({ type: 'Sponsors', data: sponsor })} className="p-2 text-blue-600 bg-gray-50 rounded-xl hover:bg-blue-50">
+                        <button onClick={() => setEditingItem({ type: 'Sponsors & Partners', data: sponsor })} className="p-2 text-blue-600 bg-gray-50 rounded-xl hover:bg-blue-50">
                           <Edit3 size={14} />
                         </button>
                         <button
@@ -1232,7 +1481,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                           </td>
                           <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
                             <div className="flex justify-end gap-2">
-                              <button onClick={() => setEditingItem({ type: 'Sponsors', data: sponsor })} className="p-2 text-blue-600 bg-white border border-gray-100 rounded-lg shadow-sm hover:bg-blue-50"><Edit3 size={12} /></button>
+                              <button onClick={() => setEditingItem({ type: 'Sponsors & Partners', data: sponsor })} className="p-2 text-blue-600 bg-white border border-gray-100 rounded-lg shadow-sm hover:bg-blue-50"><Edit3 size={12} /></button>
                               <button
                                 onClick={() => {
                                   if (deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor') {
@@ -1264,7 +1513,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
           <div className="bg-white rounded-[40px] w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl border-4 border-[#014227]">
             <div className="bg-[#014227] p-8 text-[#FFD700] border-b border-[#FFD700]/30 flex justify-between items-center">
               <h3 className="text-xl font-black uppercase tracking-widest">
-                {editingItem.data.id?.startsWith('temp_') ? 'Add' : 'Edit'} {editingItem.type === 'Nearby' ? 'Nearby Spot' : editingItem.type.slice(0, -1)}
+                {editingItem.data.id?.startsWith('temp_') ? 'Add' : 'Edit'} {editingItem.type === 'Nearby' ? 'Nearby Spot' : (editingItem.type === 'Sponsors & Partners' ? 'Partner' : editingItem.type.slice(0, -1))}
               </h3>
               <button onClick={() => setEditingItem(null)} className="hover:rotate-90 transition-transform"><X size={24} /></button>
             </div>
@@ -1397,7 +1646,48 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     <FormField label="Gala Dinner Table" value={editingItem.data.galaDinnerTable || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, galaDinnerTable: v } })} placeholder="e.g., Table 05" />
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4">
-                    <CheckboxField label="Golfer" checked={editingItem.data.isGolfParticipant} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, isGolfParticipant: v } })} />
+                    <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-4 gap-4 items-center">
+                      <span className="text-[10px] font-black uppercase text-gray-400">Dinner Manual Override</span>
+                      <CheckboxField
+                        label="Welcome"
+                        checked={editingItem.data.dinnerProfileFlags?.includes('Welcome') || false}
+                        onChange={v => {
+                          const current = editingItem.data.dinnerProfileFlags || [];
+                          const next = v ? [...current, 'Welcome'] : current.filter((f: string) => f !== 'Welcome');
+                          setEditingItem({ ...editingItem, data: { ...editingItem.data, dinnerProfileFlags: next } });
+                        }}
+                      />
+                      <CheckboxField
+                        label="Gala"
+                        checked={editingItem.data.dinnerProfileFlags?.includes('Gala') || false}
+                        onChange={v => {
+                          const current = editingItem.data.dinnerProfileFlags || [];
+                          const next = v ? [...current, 'Gala'] : current.filter((f: string) => f !== 'Gala');
+                          setEditingItem({ ...editingItem, data: { ...editingItem.data, dinnerProfileFlags: next } });
+                        }}
+                      />
+                    </div>
+                    <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-4 gap-4 items-center">
+                      <span className="text-[10px] font-black uppercase text-gray-400">Golf Manual Override</span>
+                      <CheckboxField
+                        label="Day 1"
+                        checked={editingItem.data.golfProfileFlags?.includes('Day1') || false}
+                        onChange={v => {
+                          const current = editingItem.data.golfProfileFlags || [];
+                          const next = v ? [...current, 'Day1'] : current.filter((f: string) => f !== 'Day1');
+                          setEditingItem({ ...editingItem, data: { ...editingItem.data, golfProfileFlags: next } });
+                        }}
+                      />
+                      <CheckboxField
+                        label="Day 2"
+                        checked={editingItem.data.golfProfileFlags?.includes('Day2') || false}
+                        onChange={v => {
+                          const current = editingItem.data.golfProfileFlags || [];
+                          const next = v ? [...current, 'Day2'] : current.filter((f: string) => f !== 'Day2');
+                          setEditingItem({ ...editingItem, data: { ...editingItem.data, golfProfileFlags: next } });
+                        }}
+                      />
+                    </div>
                     <CheckboxField label="Single Occupancy" checked={editingItem.data.singleOccupancy} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, singleOccupancy: v } })} />
 
                     <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1505,12 +1795,14 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
                         // 2. Filter Guests
                         const eligibleGuests = guests.filter(g => {
-                          if (!g.isGolfParticipant) return false;
+                          const targetType = currentDay === 1 ? 'Day1' : 'Day2';
+                          const manualFlag = g.golfProfileFlags?.includes(targetType);
 
                           // Check permissions
                           const perms = packagePermissions[g.package]?.permissions || {};
                           const hasPerm = Object.keys(perms).some(pid => validRuleIds.has(pid));
-                          if (!hasPerm) return false;
+
+                          if (!manualFlag && !hasPerm) return false;
 
                           // Check if assigned to another flight on same day
                           const assigned = golfGroupings.some(group =>
@@ -1561,7 +1853,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
                 </div>
               )}
-              {editingItem.type === 'Sponsors' && (
+              {editingItem.type === 'Sponsors & Partners' && (
                 <>
                   <FormField label="Sponsor Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} placeholder="Company Name" />
                   <FormField label="Tier" value={editingItem.data.tier} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, tier: v } })} placeholder="e.g. Diamond, Platinum" />
@@ -1602,7 +1894,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                           {(groupedSchedules[date] || []).map(s => {
                             const isSelected = permMetaEditData.linkedItinerary?.includes(s.id);
                             return (
-                              <label key={s.id} className={`flex items-center gap-3 p-2 rounded-xl border transition-all cursor-pointer hover:bg-white ${isSelected ? 'bg-white border-[#FFD700] ring-1 ring-[#FFD700]' : 'bg-transparent border-transparent'}`}>
+                              <label key={s.id} className={`flex items-center gap-3 p-2 rounded-xl border transition-all cursor-pointer hover:bg-white ${isSelected ? 'bg-[#FFD700] ring-1 ring-[#FFD700]' : 'bg-transparent border-transparent'}`}>
                                 <div
                                   onClick={(e) => {
                                     e.preventDefault();
@@ -1654,12 +1946,38 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     </button>
                   </div>
                 </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Dinner Flag (For Auto-Loading)</label>
+                  <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1">
+                    <button
+                      type="button"
+                      onClick={() => setPermMetaEditData({ ...permMetaEditData, dinnerType: undefined })}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${!permMetaEditData.dinnerType ? 'bg-gray-200 text-gray-600' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      None
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPermMetaEditData({ ...permMetaEditData, dinnerType: 'Welcome' })}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${permMetaEditData.dinnerType === 'Welcome' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      Welcome Dinner
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPermMetaEditData({ ...permMetaEditData, dinnerType: 'Gala' })}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${permMetaEditData.dinnerType === 'Gala' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      Gala Dinner
+                    </button>
+                  </div>
+                </div>
                 <div className="flex justify-end space-x-4 pt-6">
                   <button type="button" onClick={() => setIsPermMetaModalOpen(false)} className="px-6 py-3 font-black text-[10px] uppercase text-gray-400">Back</button>
                   <button type="submit" className="bg-[#014227] text-[#FFD700] px-10 py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl transform active:scale-95">Save Rule</button>
                 </div>
               </form>
-            </div>
+            </div >
           </div >
         )
       }

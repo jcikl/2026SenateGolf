@@ -20,7 +20,7 @@ interface GeneralInfoProps {
 }
 
 const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, diningGuide, golfGroupings, guests, sponsorships }) => {
-  const [activeTab, setActiveTab] = useState<'Itinerary' | 'Nearby' | 'Golf' | 'Sponsors'>('Itinerary');
+  const [activeTab, setActiveTab] = useState<'Itinerary' | 'Nearby' | 'Golf' | 'Sponsors & Partners'>('Itinerary');
   const [selectedGolfDay, setSelectedGolfDay] = useState<number>(1);
 
   const EVENT_DATES = [
@@ -89,10 +89,22 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                   <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none"></div>
 
                   {/* Tier Badge */}
-                  <div className="absolute top-6 left-6 flex items-center gap-2 bg-[#FFD700] text-[#014227] px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg z-20">
-                    <Star size={12} className="fill-[#014227]" />
-                    <span>{sponsor.tier} Sponsor</span>
-                  </div>
+                  {(() => {
+                    const tier = sponsor.tier?.toLowerCase() || '';
+                    const tierStyles: Record<string, string> = {
+                      diamond: 'bg-[#E0F7FA] text-[#006064]',
+                      platinum: 'bg-[#F5F5F5] text-[#424242]',
+                      gold: 'bg-[#FFD700] text-[#014227]',
+                      silver: 'bg-[#E0E0E0] text-[#616161]',
+                    };
+                    const style = tierStyles[tier] || 'bg-[#FFD700] text-[#014227]';
+                    return (
+                      <div className={`absolute top-6 left-6 flex items-center gap-2 ${style} px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg z-20`}>
+                        <Star size={12} className="fill-current" />
+                        <span>{sponsor.tier} Partner</span>
+                      </div>
+                    );
+                  })()}
 
                   {/* Logo Container - Filling available space */}
                   <div className="relative w-full flex-1 flex items-center justify-center mb-4 z-10 min-h-0 pt-12 md:pt-14 px-8 md:px-12">
@@ -144,7 +156,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
 
       {/* Primary Navigation Tabs */}
       <div className="flex bg-white rounded-3xl p-1.5 shadow-xl border border-gray-100 max-w-3xl mx-auto overflow-x-auto">
-        {(['Itinerary', 'Nearby', 'Golf', 'Sponsors'] as const).map(tab => (
+        {(['Itinerary', 'Nearby', 'Golf', 'Sponsors & Partners'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -153,7 +165,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
             {tab === 'Itinerary' && <Calendar size={14} />}
             {tab === 'Nearby' && <MapPin size={14} />}
             {tab === 'Golf' && <Trophy size={14} />}
-            {tab === 'Sponsors' && <Megaphone size={14} />}
+            {tab === 'Sponsors & Partners' && <Megaphone size={14} />}
             <span>{tab === 'Golf' ? 'Golf' : tab}</span>
           </button>
         ))}
@@ -199,15 +211,21 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                       </div>
                       <p className="text-xs text-gray-500 font-medium mb-3">{item.description}</p>
                       {item.mapLink ? (
-                        <button
-                          onClick={() => window.open(item.mapLink, '_blank')}
-                          className="flex items-center text-[10px] font-black text-[#014227] uppercase tracking-widest hover:text-black transition group/loc"
-                        >
-                          <MapPin size={10} className="mr-1 text-[#FFD700] group-hover/loc:animate-bounce" />
-                          <span className="border-b border-dashed border-[#014227]/30 group-hover/loc:border-[#014227] transition-all">
-                            {item.location}
-                          </span>
-                        </button>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center text-[10px] font-black text-[#014227] uppercase tracking-widest opacity-70">
+                            <MapPin size={10} className="mr-1 text-[#FFD700]" />
+                            <span>
+                              {item.location}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => window.open(item.mapLink, '_blank')}
+                            className="w-full md:w-auto md:self-start bg-[#014227] text-[#FFD700] px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-black transition transform active:scale-95 flex items-center justify-center gap-2"
+                          >
+                            <Navigation size={12} className="animate-pulse" />
+                            Get Directions
+                          </button>
+                        </div>
                       ) : (
                         <div className="flex items-center text-[10px] font-black text-[#014227] uppercase tracking-widest opacity-70">
                           <MapPin size={10} className="mr-1 text-[#FFD700]" />
@@ -251,7 +269,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0 auto-rows-fr">
               {[...attractions, ...diningGuide]
                 .filter(place => nearbyFilter === 'All' || (place.type || 'Other') === nearbyFilter)
                 .map(place => (
@@ -398,10 +416,10 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
         )}
       </div>
 
-      {activeTab === 'Sponsors' && (
+      {activeTab === 'Sponsors & Partners' && (
         <div className="space-y-12 animate-in slide-in-from-bottom-4">
           <div className="px-4 border-l-4 border-[#FFD700] space-y-1">
-            <h3 className="text-2xl font-black text-[#014227]">Our Partners</h3>
+            <h3 className="text-2xl font-black text-[#014227]">Our Sponsors & Partners</h3>
             <p className="text-[10px] md:text-sm text-gray-500 font-medium max-w-lg leading-relaxed">
               We extend our deepest gratitude to the visionary organizations making this event possible.
             </p>

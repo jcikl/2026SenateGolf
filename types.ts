@@ -10,6 +10,7 @@ export interface PermissionMeta {
   date: string; // e.g., "28 Mar 2026"
   linkedItinerary?: string[]; // Optional: linked EventSchedule.ids
   golfType?: 'Day1' | 'Day2'; // Optional: explicit golf day flag
+  dinnerType?: 'Welcome' | 'Gala'; // Optional: explicit dinner type flag
 }
 
 export type PackagePermissions = Record<PackageType, {
@@ -38,7 +39,8 @@ export interface Guest {
   tShirtSize: string;
   foodPreference: string;
   allergies: string; // Food/ Medicine Allergy
-  isGolfParticipant: boolean; // Golfer
+  golfProfileFlags?: ('Day1' | 'Day2')[]; // Replaces boolean isGolfParticipant for manual overrides
+  dinnerProfileFlags?: ('Welcome' | 'Gala')[]; // Manual overrides for dinners
   singleOccupancy: boolean;
   additionalRoom27Mar: boolean;
   additionalRoom27MarType?: 'Single' | 'Twin';
