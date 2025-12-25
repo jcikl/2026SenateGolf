@@ -296,7 +296,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-black text-[#014227] text-xs md:text-sm truncate">{player.name}</p>
-                              <p className="text-[8px] md:text-[9px] text-gray-400 font-bold uppercase tracking-wider">{player.nation}</p>
+                              <p className="text-[8px] md:text-[9px] text-gray-400 font-bold uppercase tracking-wider">{player.country}</p>
                             </div>
                           </div>
                         ) : null;

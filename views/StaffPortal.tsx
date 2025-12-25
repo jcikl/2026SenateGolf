@@ -373,7 +373,7 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
                       <div>
                         <p className="text-[10px] md:text-[11px] font-black text-[#FFD700] uppercase tracking-[0.2em] mb-1 md:mb-2">{scannedGuest.package}</p>
                         <h2 className="text-3xl md:text-5xl font-black text-[#014227] tracking-tighter leading-none">{scannedGuest.name}</h2>
-                        <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-[0.1em] mt-2 md:mt-3">{scannedGuest.nation} • {scannedGuest.localOrg}</p>
+                        <p className="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-[0.1em] mt-2 md:mt-3">{scannedGuest.country} • {scannedGuest.localOrg}</p>
                       </div>
                       <div className="text-left md:text-right w-full md:w-auto">
                         <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 md:mb-2">Check-in Terminal</p>

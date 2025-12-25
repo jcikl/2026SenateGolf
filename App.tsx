@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppView, Guest, EventSchedule, PackagePermissions, PackageCategory, PermissionMeta, GolfGrouping } from './types';
+import { AppView, Guest, EventSchedule, PackagePermissions, PackageCategory, PermissionMeta, GolfGrouping, Sponsorship } from './types';
 import { MOCK_GUESTS, MOCK_SCHEDULE, DEFAULT_PACKAGE_PERMISSIONS, DEFAULT_CATEGORY_PERMISSIONS } from './constants';
 import GuestPortal from './views/GuestPortal';
 import StaffPortal from './views/StaffPortal';
@@ -39,6 +39,7 @@ const App: React.FC = () => {
 
   const [attractions, setAttractions] = useState<any[]>([]);
   const [diningGuide, setDiningGuide] = useState<any[]>([]);
+  const [sponsorships, setSponsorships] = useState<Sponsorship[]>([]);
   const [golfGroupings, setGolfGroupings] = useState<GolfGrouping[]>([]);
 
   // Handle Firebase errors globally
@@ -142,6 +143,14 @@ const App: React.FC = () => {
       handleFirebaseError
     );
 
+    // Listen to Sponsorships
+    const unsubSponsorships = onSnapshot(collection(db, "sponsorships"),
+      (snapshot) => {
+        setSponsorships(snapshot.docs.map(doc => doc.data() as Sponsorship));
+      },
+      handleFirebaseError
+    );
+
     // Listen to Golf Groupings
     const unsubGolf = onSnapshot(collection(db, "golfGroupings"),
       (snapshot) => {
@@ -157,6 +166,7 @@ const App: React.FC = () => {
       unsubCatPerms();
       unsubAttractions();
       unsubDining();
+      unsubSponsorships();
       unsubGolf();
     };
   }, []);
@@ -292,6 +302,31 @@ const App: React.FC = () => {
       console.log('App: Dining sync completed.');
     } catch (e: any) {
       console.error('App: Failed to sync dining:', e);
+      handleFirebaseError(e);
+    }
+  };
+
+  const handleUpdateSponsorships = async (newList: Sponsorship[]) => {
+    const oldList = [...sponsorships];
+    setSponsorships(newList);
+
+    const toDelete = oldList.filter(o => !newList.find(n => n.id === o.id));
+    const toSync = newList.filter(n => {
+      const existing = oldList.find(o => o.id === n.id);
+      return !existing || JSON.stringify(existing) !== JSON.stringify(n);
+    });
+
+    if (toSync.length === 0 && toDelete.length === 0) return;
+
+    console.log(`App: Syncing ${toSync.length} sponsorships, deleting ${toDelete.length}...`);
+    try {
+      const batch = writeBatch(db);
+      toSync.forEach(item => batch.set(doc(db, "sponsorships", item.id), item));
+      toDelete.forEach(item => batch.delete(doc(db, "sponsorships", item.id)));
+      await batch.commit();
+      console.log('App: Sponsorships sync completed.');
+    } catch (e: any) {
+      console.error('App: Failed to sync sponsorships:', e);
       handleFirebaseError(e);
     }
   };
@@ -516,6 +551,8 @@ service cloud.firestore {
             onUpdateAttractions={handleUpdateAttractions}
             diningGuide={diningGuide}
             onUpdateDining={handleUpdateDining}
+            sponsorships={sponsorships}
+            onUpdateSponsorships={handleUpdateSponsorships}
             golfGroupings={golfGroupings}
             onUpdateGolfGroupings={handleUpdateGolfGroupings}
             packagePermissions={packagePermissions}

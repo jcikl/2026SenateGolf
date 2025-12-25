@@ -104,7 +104,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
             <span>Profile & Logistics</span>
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <InfoItem label="Origin" value={`${guest.nation} / ${guest.localOrg}`} />
+            <InfoItem label="Origin" value={`${guest.country} / ${guest.localOrg}`} />
             <InfoItem label="Merchandise" value={`${guest.tShirtSize} Size T-Shirt`} icon={<Shirt size={14} />} />
             {guest.isGolfParticipant && (
               <>

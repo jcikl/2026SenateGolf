@@ -25,9 +25,10 @@ export interface Guest {
   gender: string;
   position: string;
 
-  nation: string;
+  country: string;
   localOrg: string;
   senatorshipId?: string;
+  isSenator?: boolean;
   package: PackageType;
   email: string; // MAIL
   whatsapp: string;
@@ -39,7 +40,9 @@ export interface Guest {
   isGolfParticipant: boolean; // Golfer
   singleOccupancy: boolean;
   additionalRoom27Mar: boolean;
+  additionalRoom27MarType?: 'Single' | 'Twin';
   additionalRoom28Mar: boolean;
+  additionalRoom28MarType?: 'Single' | 'Twin';
 
   // Existing internal/tracking fields
   passportLast4: string;

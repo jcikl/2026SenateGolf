@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Guest, PackageType, PackageCategory, EventSchedule, PackagePermissions, PermissionMeta, GolfGrouping } from '../types';
-import { Users, Filter, ClipboardPaste, X, CheckCircle2, Calendar, MapPin, Plus, Trash2, Edit3, Save, Check, Square, Edit, Tag, Clock, ChevronRight, RefreshCw, ChevronDown, AlertTriangle, Trophy } from 'lucide-react';
+import { Guest, PackageType, PackageCategory, EventSchedule, PackagePermissions, PermissionMeta, GolfGrouping, Sponsorship } from '../types';
+import { Users, Filter, ClipboardPaste, X, CheckCircle2, Calendar, MapPin, Plus, Trash2, Edit3, Save, Check, Square, Edit, Tag, Clock, ChevronRight, RefreshCw, ChevronDown, AlertTriangle, Trophy, Megaphone } from 'lucide-react';
 
 interface AdminPortalProps {
   guests: Guest[];
@@ -18,6 +18,8 @@ interface AdminPortalProps {
   onUpdateCategoryPermissions: (newCatPerms: Record<PackageCategory, PermissionMeta[]>) => void;
   golfGroupings: GolfGrouping[];
   onUpdateGolfGroupings: (newList: GolfGrouping[]) => void;
+  sponsorships: Sponsorship[];
+  onUpdateSponsorships: (newList: Sponsorship[]) => void;
 }
 
 const PACKAGE_CATEGORIES: PackageCategory[] = ['International', 'APDC', 'JCI Malaysia', 'JCI Japan', 'JCI Korea'];
@@ -35,17 +37,17 @@ const SelectField: React.FC<{ label: string; value: string; onChange: (v: string
   </div>
 );
 
-type AdminView = 'Attendees' | 'Itinerary' | 'Packages' | 'Nearby' | 'Golf';
+type AdminView = 'Attendees' | 'Itinerary' | 'Packages' | 'Nearby' | 'Golf' | 'Sponsors';
 
 const AdminPortal: React.FC<AdminPortalProps> = ({
-  guests, onUpdateGuests, schedules, onUpdateSchedules, onBulkSync, attractions, onUpdateAttractions, diningGuide, onUpdateDining, packagePermissions, onUpdatePackagePermissions, categoryPermissions, onUpdateCategoryPermissions, golfGroupings, onUpdateGolfGroupings
+  guests, onUpdateGuests, schedules, onUpdateSchedules, onBulkSync, attractions, onUpdateAttractions, diningGuide, onUpdateDining, packagePermissions, onUpdatePackagePermissions, categoryPermissions, onUpdateCategoryPermissions, golfGroupings, onUpdateGolfGroupings, sponsorships, onUpdateSponsorships
 }) => {
   const [activeAdminTab, setActiveAdminTab] = useState<AdminView>('Attendees');
   const [activeGolfDay, setActiveGolfDay] = useState<1 | 2>(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
-  const [pasteMode, setPasteMode] = useState<'guests' | 'nearby'>('guests');
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'package' | 'rule' | 'attendee' | 'itinerary' | 'nearby' | 'golf' } | null>(null);
+  const [pasteMode, setPasteMode] = useState<'guests' | 'nearby' | 'sponsors'>('guests');
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; type: 'package' | 'rule' | 'attendee' | 'itinerary' | 'nearby' | 'golf' | 'sponsor' } | null>(null);
   const [importPreview, setImportPreview] = useState<string[][] | null>(null);
 
   useEffect(() => {
@@ -156,6 +158,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       onUpdateAttractions(isNew ? [...attractions, finalData] : attractions.map(a => a.id === finalId ? finalData : a));
     } else if (type === 'Golf') {
       onUpdateGolfGroupings(isNew ? [...golfGroupings, finalData] : golfGroupings.map(g => g.id === finalId ? finalData : g));
+    } else if (type === 'Sponsors') {
+      onUpdateSponsorships(isNew ? [...sponsorships, finalData] : sponsorships.map(s => s.id === finalId ? finalData : s));
     }
     setEditingItem(null);
   };
@@ -273,7 +277,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       </div>
 
       <div className="flex bg-white rounded-3xl p-1 shadow-xl border border-gray-100 overflow-x-auto">
-        {(['Attendees', 'Itinerary', 'Packages', 'Nearby', 'Golf'] as AdminView[]).map(tab => (
+        {(['Attendees', 'Itinerary', 'Packages', 'Nearby', 'Golf', 'Sponsors'] as AdminView[]).map(tab => (
           <button key={tab} onClick={() => setActiveAdminTab(tab)} className={`flex-1 flex items-center justify-center space-x-2 py-3 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeAdminTab === tab ? 'bg-[#014227] text-[#FFD700] shadow-lg' : 'text-gray-400 hover:text-[#014227]'}`}>
             <span>{tab}</span>
           </button>
@@ -311,7 +315,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               {guests.filter(g =>
                 g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 g.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                g.nation.toLowerCase().includes(searchQuery.toLowerCase())
+                g.country.toLowerCase().includes(searchQuery.toLowerCase())
               ).map(guest => (
                 <div key={guest.id} className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 relative group">
                   <div className="absolute top-4 right-4 flex gap-2">
@@ -340,8 +344,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
                   <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                     <div>
-                      <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Nation</p>
-                      <p className="text-xs font-bold text-[#014227]">{guest.nation}</p>
+                      <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Country</p>
+                      <p className="text-xs font-bold text-[#014227]">{guest.country}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Organization</p>
@@ -357,7 +361,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                   <tr>
                     <th className="px-8 py-4">Identity</th>
                     <th className="px-8 py-4">Package</th>
-                    <th className="px-8 py-4">Nation</th>
+                    <th className="px-8 py-4">Country</th>
                     <th className="px-8 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -365,7 +369,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                   {guests.filter(g =>
                     g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     g.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    g.nation.toLowerCase().includes(searchQuery.toLowerCase())
+                    g.country.toLowerCase().includes(searchQuery.toLowerCase())
                   ).map(guest => (
                     <tr key={guest.id} className="hover:bg-gray-50 transition group">
                       <td className="px-8 py-6">
@@ -376,7 +380,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                         <span className="bg-[#014227] text-[#FFD700] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">{guest.package}</span>
                       </td>
                       <td className="px-8 py-6">
-                        <div className="text-[10px] font-black uppercase text-[#014227]">{guest.nation}</div>
+                        <div className="text-[10px] font-black uppercase text-[#014227]">{guest.country}</div>
                         <div className="text-[9px] font-bold text-gray-400 uppercase">{guest.localOrg}</div>
                       </td>
                       <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
@@ -566,7 +570,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               // By Country
               const byNation: Record<string, number> = {};
               eligible.forEach(g => {
-                byNation[g.nation] = (byNation[g.nation] || 0) + 1;
+                byNation[g.country] = (byNation[g.country] || 0) + 1;
               });
               const sortedNations = Object.entries(byNation).sort((a, b) => b[1] - a[1]);
 
@@ -591,8 +595,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                   <div className="col-span-3 lg:col-span-1 bg-white p-3 md:p-4 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Top Nations</div>
                     <div className="flex flex-wrap gap-1.5 h-auto lg:h-12 overflow-y-auto custom-scrollbar content-start">
-                      {sortedNations.map(([nation, count]) => (
-                        <span key={nation} className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase">{nation} {count}</span>
+                      {sortedNations.map(([country, count]) => (
+                        <span key={country} className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase">{country} {count}</span>
                       ))}
                     </div>
                   </div>
@@ -684,7 +688,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                               <span className="bg-gray-100 text-gray-400 px-2 py-0.5 rounded text-[8px] font-black uppercase whitespace-nowrap">Pending</span>
                             )}
                           </div>
-                          <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">{g.package} • {g.nation}</div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">{g.package} • {g.country}</div>
 
                           <div className="mt-4 grid grid-cols-3 gap-3">
                             <div className="space-y-1">
@@ -805,7 +809,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                           </td>
                           <td className="px-6 py-4">
                             <div className="font-black text-[#014227]">{g.name}</div>
-                            <div className="text-[9px] font-bold text-gray-400 uppercase">{g.package} • {g.nation}</div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase">{g.package} • {g.country}</div>
                           </td>
                           <td className="px-6 py-4">
                             {group ? (
@@ -1077,6 +1081,130 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       )}
 
+      {activeAdminTab === 'Sponsors' && (
+        <div className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4">
+          <div className="p-8 bg-[#014227] text-[#FFD700] flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-black uppercase tracking-widest">Sponsorships</h3>
+              <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{sponsorships.length} Sponsors Listed</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingItem({ type: 'Sponsors', data: { id: 'temp_' + Date.now(), name: '', tier: 'Gold', logo: '', website: '', description: '' } })}
+                className="bg-[#014227] border border-[#FFD700] text-[#FFD700] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FFD700] hover:text-[#014227] transition flex items-center gap-2"
+              >
+                <Plus size={14} /> Add
+              </button>
+              <button
+                onClick={() => { setPasteMode('sponsors'); setIsPasteModalOpen(true); }}
+                className="bg-[#FFD700] text-[#014227] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-white hover:text-[#014227] transition flex items-center gap-2"
+              >
+                <ClipboardPaste size={14} /> Paste
+              </button>
+            </div>
+          </div>
+          <div className="md:hidden p-4 space-y-4 bg-gray-50/50">
+            {sponsorships.map(sponsor => (
+              <div key={sponsor.id} className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 relative group">
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <button onClick={() => setEditingItem({ type: 'Sponsors', data: sponsor })} className="p-2 text-blue-600 bg-gray-50 rounded-xl hover:bg-blue-50">
+                    <Edit3 size={14} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor') {
+                        onUpdateSponsorships(sponsorships.filter(s => s.id !== sponsor.id));
+                        setDeleteConfirm(null);
+                      } else {
+                        setDeleteConfirm({ id: sponsor.id, type: 'sponsor' });
+                      }
+                    }}
+                    className={`p-2 rounded-xl transition-all ${deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? 'bg-orange-500 text-white' : 'text-red-500 bg-gray-50'}`}
+                  >
+                    {deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? <AlertTriangle size={14} /> : <Trash2 size={14} />}
+                  </button>
+                </div>
+
+                <div className="pr-16 mb-2">
+                  <h4 className="font-black text-[#014227] text-lg leading-tight">{sponsor.name}</h4>
+                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{sponsor.tier}</div>
+                </div>
+
+                {sponsor.logo && (
+                  <div className="mt-4">
+                    <img src={sponsor.logo} alt={`${sponsor.name} logo`} className="max-h-12 object-contain" />
+                  </div>
+                )}
+
+                {sponsor.website && (
+                  <div className="mt-4">
+                    <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs font-bold hover:underline">{sponsor.website}</a>
+                  </div>
+                )}
+
+                {sponsor.description && (
+                  <div className="mt-4 text-xs text-gray-600 leading-relaxed line-clamp-3">
+                    {sponsor.description}
+                  </div>
+                )}
+              </div>
+            ))}
+            {sponsorships.length === 0 && (
+              <div className="text-center p-10 text-gray-400 text-xs font-bold uppercase">No sponsors found</div>
+            )}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
+                <tr>
+                  <th className="px-8 py-4">Sponsor</th>
+                  <th className="px-8 py-4">Tier</th>
+                  <th className="px-8 py-4">Website</th>
+                  <th className="px-8 py-4">Description</th>
+                  <th className="px-8 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {sponsorships.map(sponsor => (
+                  <tr key={sponsor.id} className="hover:bg-gray-50 transition group">
+                    <td className="px-8 py-6">
+                      <div className="font-black text-[#014227]">{sponsor.name}</div>
+                      {sponsor.logo && <img src={sponsor.logo} alt={`${sponsor.name} logo`} className="max-h-8 object-contain mt-2" />}
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-[9px] font-black uppercase">{sponsor.tier}</span>
+                    </td>
+                    <td className="px-8 py-6">
+                      {sponsor.website && <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline">{sponsor.website}</a>}
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="text-sm text-gray-600 max-w-md line-clamp-2">{sponsor.description}</div>
+                    </td>
+                    <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => setEditingItem({ type: 'Sponsors', data: sponsor })} className="p-2 text-blue-600 bg-white border border-gray-100 rounded-lg shadow-sm hover:bg-blue-50"><Edit3 size={12} /></button>
+                        <button
+                          onClick={() => {
+                            if (deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor') {
+                              onUpdateSponsorships(sponsorships.filter(s => s.id !== sponsor.id));
+                              setDeleteConfirm(null);
+                            } else {
+                              setDeleteConfirm({ id: sponsor.id, type: 'sponsor' });
+                            }
+                          }}
+                          className={`p-2 rounded-lg shadow-sm transition-all duration-200 ${deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? 'bg-orange-500 text-white scale-110' : 'text-red-500 bg-white border border-gray-100 hover:bg-red-50'}`}
+                        >
+                          {deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? <AlertTriangle size={12} /> : <Trash2 size={12} />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {editingItem && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -1118,11 +1246,26 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                     <FormField label="Position" value={editingItem.data.position} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, position: v } })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <SelectField label="Nation" value={editingItem.data.nation} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, nation: v } })} options={NATIONS} />
+                    <SelectField label="Country" value={editingItem.data.country} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, country: v } })} options={NATIONS} />
                     <FormField label="Local Organisation" value={editingItem.data.localOrg} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, localOrg: v } })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Senatorship ID" value={editingItem.data.senatorshipId} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, senatorshipId: v } })} />
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <FormField label="Senatorship ID" value={editingItem.data.senatorshipId} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, senatorshipId: v } })} />
+                      </div>
+                      <div className="pb-3">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!editingItem.data.isSenator}
+                            onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, isSenator: e.target.checked } })}
+                            className="rounded border-gray-300 text-[#014227] focus:ring-[#014227] w-5 h-5"
+                          />
+                          <span className="text-[10px] font-black uppercase text-gray-400">Senator</span>
+                        </label>
+                      </div>
+                    </div>
                     <FormField label="MAIL" value={editingItem.data.email} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, email: v } })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -1172,8 +1315,25 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                   <div className="grid grid-cols-2 gap-4 pt-4">
                     <CheckboxField label="Golfer" checked={editingItem.data.isGolfParticipant} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, isGolfParticipant: v } })} />
                     <CheckboxField label="Single Occupancy" checked={editingItem.data.singleOccupancy} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, singleOccupancy: v } })} />
-                    <CheckboxField label="Additional Rm (27 Mar)" checked={editingItem.data.additionalRoom27Mar} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom27Mar: v } })} />
-                    <CheckboxField label="Additional Rm (28 Mar)" checked={editingItem.data.additionalRoom28Mar} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom28Mar: v } })} />
+
+                    <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className={`space-y-2 p-4 rounded-2xl border transition-all ${editingItem.data.additionalRoom27Mar ? 'bg-[#fffbeb] border-[#FFD700]' : 'bg-gray-50 border-gray-100'}`}>
+                        <CheckboxField label="Additional Rm (27 Mar)" checked={editingItem.data.additionalRoom27Mar} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom27Mar: v } })} />
+                        {editingItem.data.additionalRoom27Mar && (
+                          <div className="animate-in slide-in-from-top-2">
+                            <SelectField label="Room Type" value={editingItem.data.additionalRoom27MarType} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom27MarType: v } })} options={['Single', 'Twin']} />
+                          </div>
+                        )}
+                      </div>
+                      <div className={`space-y-2 p-4 rounded-2xl border transition-all ${editingItem.data.additionalRoom28Mar ? 'bg-[#fffbeb] border-[#FFD700]' : 'bg-gray-50 border-gray-100'}`}>
+                        <CheckboxField label="Additional Rm (28 Mar)" checked={editingItem.data.additionalRoom28Mar} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom28Mar: v } })} />
+                        {editingItem.data.additionalRoom28Mar && (
+                          <div className="animate-in slide-in-from-top-2">
+                            <SelectField label="Room Type" value={editingItem.data.additionalRoom28MarType} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom28MarType: v } })} options={['Single', 'Twin']} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1289,7 +1449,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                               </div>
                               <div className="flex-1">
                                 <div className="text-xs font-black text-[#014227]">{g.name}</div>
-                                <div className="text-[9px] font-bold text-gray-400 uppercase">{g.nation} • {g.package}</div>
+                                <div className="text-[9px] font-bold text-gray-400 uppercase">{g.country} • {g.package}</div>
                               </div>
                             </label>
                           );
@@ -1299,6 +1459,16 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
                 </div>
               )}
+              {editingItem.type === 'Sponsors' && (
+                <>
+                  <FormField label="Sponsor Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} placeholder="Company Name" />
+                  <SelectField label="Tier" value={editingItem.data.tier} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, tier: v } })} options={['Diamond', 'Platinum', 'Gold', 'Silver']} />
+                  <FormField label="Logo URL" value={editingItem.data.logo} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, logo: v } })} placeholder="https://..." />
+                  <FormField label="Website" value={editingItem.data.website} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, website: v } })} placeholder="https://..." />
+                  <FormField label="Description" value={editingItem.data.description} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: v } })} placeholder="Ad copy..." type="textarea" />
+                </>
+              )}
+
               <div className="pt-6 border-t border-gray-100">
                 <button type="submit" className="w-full bg-[#014227] text-[#FFD700] py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl transform active:scale-95 transition-all">
                   Commit Registry Updates
@@ -1316,7 +1486,17 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               <h3 className="text-xl font-black text-[#014227] mb-8 uppercase tracking-widest">{permMetaEditData.id ? 'Modify' : 'New'} {permMetaEditData.category} Rule</h3>
               <form onSubmit={handleAddOrUpdatePermMeta} className="space-y-6">
                 <FormField label="Rule Label (e.g. Banquet)" value={permMetaEditData.name} onChange={v => setPermMetaEditData({ ...permMetaEditData, name: v })} />
-                <FormField label="Designated Day (e.g. 29 Mar)" value={permMetaEditData.date} onChange={v => setPermMetaEditData({ ...permMetaEditData, date: v })} />
+                <FormField label="Designated Day (e.g. 29 Mar)" value={permMetaEditData.date} onChange={v => setPermMetaEditData({ ...permMetaEditData, date: v })}>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Description</label>
+                    <textarea
+                      className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all resize-none"
+                      rows={2}
+                      value={editingItem.data.desc || ''}
+                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, desc: e.target.value } })}
+                    />
+                  </div>
+                </FormField>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Linked Itineraries (Optional)</label>
                   <div className="max-h-48 overflow-y-auto space-y-4 p-4 bg-gray-50 border border-gray-100 rounded-2xl custom-scrollbar">
@@ -1573,7 +1753,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                                       if (h.includes('id') && !h.includes('line') && !h.includes('senator')) { g.id = val; hasId = true; }
                                       else if (h.includes('tag')) g.nameOnTag = val;
                                       else if (h.includes('name')) g.name = val;
-                                      else if (h.includes('nation')) g.nation = val;
+                                      else if (h.includes('country')) g.country = val;
                                       else if (h.includes('org')) g.localOrg = val;
                                       else if (h.includes('senator')) g.senatorshipId = val;
                                       else if (h.includes('pack')) g.package = val;
@@ -1690,10 +1870,27 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   );
 };
 
-const FormField: React.FC<{ label: string; value: string; onChange: (v: string) => void; placeholder?: string }> = ({ label, value, onChange, placeholder }) => (
+const FormField: React.FC<{ label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; children?: React.ReactNode }> = ({ label, value, onChange, placeholder, type = 'text', children }) => (
   <div className="space-y-1">
     <label className="text-[10px] font-black uppercase text-gray-400 ml-2">{label}</label>
-    <input type="text" placeholder={placeholder} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all" value={value || ''} onChange={e => onChange(e.target.value)} />
+    {type === 'textarea' ? (
+      <textarea
+        className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all resize-none"
+        rows={3}
+        placeholder={placeholder}
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+      />
+    ) : (
+      <input
+        type={type}
+        placeholder={placeholder}
+        className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all"
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+      />
+    )}
+    {children}
   </div>
 );
 

@@ -9,7 +9,7 @@ export const MOCK_GUESTS: Guest[] = [
     gender: 'Male',
     position: 'Delegate',
 
-    nation: 'Japan',
+    country: 'Japan',
     localOrg: 'JCI Osaka',
     senatorshipId: '12345',
     package: 'G3jp',

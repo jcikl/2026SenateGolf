@@ -42,7 +42,7 @@
 
 ## 📝 Form Optimizations
 **Improved Data Entry Quality:**
-- **Nation Dropdown**: Replaced free-text input with a standardized country list (Malaysia, Japan, Korea, etc.).
+- **Country Dropdown**: Replaced free-text input with a standardized country list (Malaysia, Japan, Korea, etc.).
 - **T-Shirt Size Dropdown**: Enforced standard sizing options (`2XS` to `7XL`).
 - **Food Preference Toggle**: Switched from text input to a clear "Non-Veg" vs "Vegetarian" toggle switch.
 - **Gender Toggle**: Switched from text input to a "Male" vs "Female" toggle switch.
