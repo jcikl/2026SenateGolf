@@ -3,3 +3,16 @@
 @theme {
     --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Swiper Pagination Customization */
+.swiper-pagination-bullet {
+    background: #9ca3af !important;
+    /* gray-400 */
+    opacity: 0.5 !important;
+}
+
+.swiper-pagination-bullet-active {
+    background: #FFD700 !important;
+    /* Theme Gold/Orange */
+    opacity: 1 !important;
+}

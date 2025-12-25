@@ -3,7 +3,7 @@ import { Guest, Sponsorship, EventSchedule, PackagePermissions, PackageCategory,
 
 export const MOCK_GUESTS: Guest[] = [
   {
-    id: 'G001',
+    id: 'G3jp-0001-JP',
     nameOnTag: 'KENJI',
     name: 'Tanaka Kenji',
     gender: 'Male',
@@ -12,6 +12,8 @@ export const MOCK_GUESTS: Guest[] = [
     country: 'Japan',
     localOrg: 'JCI Osaka',
     senatorshipId: '12345',
+    isSenator: true,
+    passportId: 'AB1234567',
     package: 'G3jp',
     email: 'tanaka@jci.jp',
     whatsapp: '+81 90-1234-5678',
@@ -80,14 +82,14 @@ export const DEFAULT_CATEGORY_PERMISSIONS: Record<PackageCategory, PermissionMet
     { id: 'apdc_mar31_full', name: 'Breakfast, Excursion, GALA Dinner, Hotel', date: '31 Mar 2026' },
     { id: 'apdc_apr01_brk', name: 'Breakfast', date: '01 Apr 2026' },
   ],
-  'JCI Malaysia': [
+  'JCIM': [
     { id: 'my_day1_golf', name: 'Day 1 Golf', date: '30 Mar 2026', golfType: 'Day1' },
     { id: 'my_day2_golf', name: 'Day 2 Golf', date: '31 Mar 2026', golfType: 'Day2' },
     { id: 'my_welcome', name: 'Welcoming Night', date: '29 Mar 2026' },
     { id: 'my_gala', name: 'GALA Night', date: '31 Mar 2026' },
     { id: 'my_day1_meet', name: 'Day 1 Meeting', date: '29 Mar 2026' },
   ],
-  'International': [
+  'Int': [
     { id: 'int_day1_golf', name: 'Day 1 Golf', date: '30 Mar 2026', golfType: 'Day1' },
     { id: 'int_day2_golf', name: 'Day 2 Golf', date: '31 Mar 2026', golfType: 'Day2' },
     { id: 'int_day1_hotel', name: 'Day 1 Hotel', date: '27 Mar 2026' },
@@ -98,8 +100,9 @@ export const DEFAULT_CATEGORY_PERMISSIONS: Record<PackageCategory, PermissionMet
     { id: 'int_pass_31', name: 'All Access Day Pass (Farewell Night)', date: '31 Mar 2026' },
     { id: 'int_pass_multi', name: 'All Access Day Pass (Mar 29-31)', date: '29-31 Mar 2026' },
   ],
-  'JCI Japan': [],
-  'JCI Korea': []
+  'JP': [],
+  'KR': [],
+  'VIP': []
 };
 
 const createPerms = (cat: PackageCategory) => {
@@ -111,36 +114,36 @@ const createPerms = (cat: PackageCategory) => {
 };
 
 export const DEFAULT_PACKAGE_PERMISSIONS: PackagePermissions = {
-  // International
-  'G3': createPerms('International'),
-  'G2': createPerms('International'),
-  'N3': createPerms('International'),
-  'N2': createPerms('International'),
-  'N1': createPerms('International'),
-  'D11': createPerms('International'),
-  'D12': createPerms('International'),
-  'D13': createPerms('International'),
-  'D3A': createPerms('International'),
+  // Int
+  'G3': createPerms('Int'),
+  'G2': createPerms('Int'),
+  'N3': createPerms('Int'),
+  'N2': createPerms('Int'),
+  'N1': createPerms('Int'),
+  'D11': createPerms('Int'),
+  'D12': createPerms('Int'),
+  'D13': createPerms('Int'),
+  'D3A': createPerms('Int'),
 
   // APDC
   'APDC Option 1': createPerms('APDC'),
   'APDC Option 2': createPerms('APDC'),
 
-  // JCI Malaysia
-  'Day 1 Meeting Access': createPerms('JCI Malaysia'),
-  'Welcome Dinner': createPerms('JCI Malaysia'),
-  'GALA Dinner': createPerms('JCI Malaysia'),
-  '3 in 1 Events Pass': createPerms('JCI Malaysia'),
-  '2 in 1 Event Pass A': createPerms('JCI Malaysia'),
-  '2 in 1 Event Pass B': createPerms('JCI Malaysia'),
-  '2 in 1 Event Pass C': createPerms('JCI Malaysia'),
-  '1st & 2nd Golfer': createPerms('JCI Malaysia'),
-  '2nd Day Golfer': createPerms('JCI Malaysia'),
+  // JCIM
+  'Day 1 Meeting Access': createPerms('JCIM'),
+  'Welcome Dinner': createPerms('JCIM'),
+  'GALA Dinner': createPerms('JCIM'),
+  '3 in 1 Events Pass': createPerms('JCIM'),
+  '2 in 1 Event Pass A': createPerms('JCIM'),
+  '2 in 1 Event Pass B': createPerms('JCIM'),
+  '2 in 1 Event Pass C': createPerms('JCIM'),
+  '1st & 2nd Golfer': createPerms('JCIM'),
+  '2nd Day Golfer': createPerms('JCIM'),
 
-  // JCI Japan
-  'G3jp': createPerms('JCI Japan'),
+  // JP
+  'G3jp': createPerms('JP'),
 
-  // JCI Korea
-  'G3a': createPerms('JCI Korea'),
-  'G3b': createPerms('JCI Korea'),
+  // KR
+  'G3a': createPerms('KR'),
+  'G3b': createPerms('KR'),
 };

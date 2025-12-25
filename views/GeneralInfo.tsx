@@ -1,7 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EventSchedule, GolfGrouping, Guest } from '../types';
-import { MapPin, Calendar, Utensils, Navigation, Landmark, Trophy, Coffee, Clock, Users, Phone, Globe } from 'lucide-react';
+import { MapPin, Calendar, Utensils, Navigation, Landmark, Trophy, Coffee, Clock, Users, Phone, Globe, Star, Megaphone } from 'lucide-react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, EffectCube, Pagination } from 'swiper/modules';
+
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/effect-cube';
+import 'swiper/css/pagination';
 
 interface GeneralInfoProps {
   schedules: EventSchedule[];
@@ -9,10 +16,11 @@ interface GeneralInfoProps {
   diningGuide: any[];
   golfGroupings: GolfGrouping[];
   guests: Guest[];
+  sponsorships: any[];
 }
 
-const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, diningGuide, golfGroupings, guests }) => {
-  const [activeTab, setActiveTab] = useState<'Itinerary' | 'Nearby' | 'Golf'>('Itinerary');
+const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, diningGuide, golfGroupings, guests, sponsorships }) => {
+  const [activeTab, setActiveTab] = useState<'Itinerary' | 'Nearby' | 'Golf' | 'Sponsors'>('Itinerary');
   const [selectedGolfDay, setSelectedGolfDay] = useState<number>(1);
 
   const EVENT_DATES = [
@@ -53,28 +61,92 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-700 pb-20 md:pb-0">
-      {/* Styled Hero Banner */}
-      <div className="relative h-64 md:h-80 rounded-[40px] overflow-hidden shadow-2xl group bg-gradient-to-b from-[#FFD700] via-[#FFA500] to-[#FF8C00]">
-        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-[120px] md:text-[200px] font-black text-white/20 select-none tracking-tighter">30</div>
-        </div>
+      {/* Sponsor Banner (Swiper 3D Cube Powered) */}
+      <div className="relative h-72 md:h-80 rounded-[40px] overflow-hidden shadow-2xl group border-4 border-[#014227] bg-[#014227]">
+        {sponsorships && sponsorships.length > 0 ? (
+          <Swiper
+            modules={[Autoplay, EffectCube, Pagination]}
+            effect="cube"
+            grabCursor={true}
+            cubeEffect={{
+              shadow: true,
+              slideShadows: true,
+              shadowOffset: 20,
+              shadowScale: 2,
+            }}
+            autoplay={{
+              delay: 5000,
+              disableOnInteraction: false,
+            }}
+            pagination={{
+              clickable: true,
+            }}
+            loop={true}
+            className="w-full h-full"
+          >
+            {sponsorships.map((sponsor) => (
+              <SwiperSlide key={sponsor.id}>
+                <div className="relative w-full h-full flex flex-col items-center p-6 md:p-10">
+                  {/* Background Pattern */}
+                  <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none"></div>
 
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[#014227] flex flex-col items-center justify-center px-6 text-center">
-          <div className="absolute -top-12 w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl border-4 border-[#FFD700]">
-            <Trophy className="text-[#014227] w-12 h-12" />
+                  {/* Tier Badge */}
+                  <div className="absolute top-6 left-6 flex items-center gap-2 bg-[#FFD700] text-[#014227] px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg z-20">
+                    <Star size={12} className="fill-[#014227]" />
+                    <span>{sponsor.tier} Sponsor</span>
+                  </div>
+
+                  {/* Logo Container - Filling available space */}
+                  <div className="relative w-full flex-1 flex items-center justify-center mb-4 z-10 min-h-0">
+                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-32 bg-[#FFD700]/10 blur-3xl rounded-full pointer-events-none"></div>
+                    <div className="relative h-full w-full flex items-center justify-center p-4">
+                      <img
+                        src={sponsor.logo}
+                        alt={sponsor.name}
+                        className="max-h-[140px] md:max-h-[180px] w-auto max-w-full object-contain filter drop-shadow-2xl"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Text Info - Pushed to bottom */}
+                  <div className="text-center z-10 max-w-xl pb-4 flex flex-col items-center">
+                    {sponsor.website ? (
+                      <button
+                        onClick={() => window.open(sponsor.website, '_blank')}
+                        className="group/btn flex items-center gap-2 mb-1"
+                      >
+                        <h2 className="text-xl md:text-2xl font-black text-[#FFD700] uppercase tracking-tight line-clamp-1 group-hover/btn:underline decoration-2 underline-offset-4">
+                          {sponsor.name}
+                        </h2>
+                        <span className="text-[#FFD700] font-black text-sm md:text-lg animate-pulse">»</span>
+                      </button>
+                    ) : (
+                      <h2 className="text-xl md:text-2xl font-black text-[#FFD700] mb-1 uppercase tracking-tight line-clamp-1">
+                        {sponsor.name}
+                      </h2>
+                    )}
+                    <p className="text-[9px] md:text-[10px] text-white/50 font-bold uppercase tracking-[0.2em] leading-relaxed line-clamp-1 opacity-80">
+                      {sponsor.description}
+                    </p>
+                  </div>
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        ) : (
+          /* Fallback when no sponsors */
+          <div className="absolute inset-0 bg-gradient-to-b from-[#014227] to-black flex items-center justify-center">
+            <div className="text-center">
+              <Megaphone className="text-[#FFD700] w-16 h-16 mx-auto mb-4 opacity-50" />
+              <p className="text-[#FFD700] font-black uppercase tracking-[0.3em] text-xs">JCI ASPAC SENATE GOLF</p>
+            </div>
           </div>
-          <div className="mt-8">
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FFD700] mb-1">Kuala Lumpur {" >> "} Malaysia 2026</p>
-            <h1 className="text-3xl md:text-5xl font-black tracking-widest text-white">JCI ASPAC SENATE GOLF</h1>
-            <p className="text-xs md:text-sm text-white/70 font-bold mt-2 uppercase tracking-[0.2em]">27 - 31 MAR 2026</p>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Primary Navigation Tabs */}
       <div className="flex bg-white rounded-3xl p-1.5 shadow-xl border border-gray-100 max-w-3xl mx-auto overflow-x-auto">
-        {(['Itinerary', 'Nearby', 'Golf'] as const).map(tab => (
+        {(['Itinerary', 'Nearby', 'Golf', 'Sponsors'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -83,6 +155,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
             {tab === 'Itinerary' && <Calendar size={14} />}
             {tab === 'Nearby' && <MapPin size={14} />}
             {tab === 'Golf' && <Trophy size={14} />}
+            {tab === 'Sponsors' && <Megaphone size={14} />}
             <span>{tab === 'Golf' ? 'Golf' : tab}</span>
           </button>
         ))}
@@ -314,6 +387,78 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
           </div>
         )}
       </div>
+
+      {activeTab === 'Sponsors' && (
+        <div className="space-y-12 animate-in slide-in-from-bottom-4">
+          <div className="px-4 border-l-4 border-[#FFD700] space-y-1">
+            <h3 className="text-2xl font-black text-[#014227]">Our Partners</h3>
+            <p className="text-[10px] md:text-sm text-gray-500 font-medium max-w-lg leading-relaxed">
+              We extend our deepest gratitude to the visionary organizations making this event possible.
+            </p>
+          </div>
+
+          {(() => {
+            const grouped = sponsorships.reduce((acc, s) => {
+              const tier = s.tier || 'Other';
+              if (!acc[tier]) acc[tier] = [];
+              acc[tier].push(s);
+              return acc;
+            }, {} as Record<string, any[]>);
+
+            // Sort tiers: Diamond, Platinum, Gold, Silver, then others
+            const tierOrder = ['Diamond', 'Platinum', 'Gold', 'Silver'];
+            const sortedTiers = Object.keys(grouped).sort((a, b) => {
+              const idxA = tierOrder.indexOf(a);
+              const idxB = tierOrder.indexOf(b);
+              if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+              if (idxA !== -1) return -1;
+              if (idxB !== -1) return 1;
+              return a.localeCompare(b);
+            });
+
+            return sortedTiers.map(tier => (
+              <div key={tier} className="space-y-6">
+                <div className="flex items-center gap-4 px-4">
+                  <div className="h-px bg-gray-100 flex-1"></div>
+                  <div className="flex items-center gap-2 bg-[#FFD700] text-[#014227] px-6 py-2 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-sm">
+                    <Star size={12} className="fill-[#014227]" />
+                    <span>{tier}</span>
+                  </div>
+                  <div className="h-px bg-gray-100 flex-1"></div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0">
+                  {grouped[tier].map(sponsor => (
+                    <div key={sponsor.id} className="bg-white rounded-[40px] p-6 shadow-sm border border-gray-100 group hover:shadow-2xl hover:border-[#FFD700]/30 transition-all duration-500 flex flex-col items-center text-center">
+                      <div className="h-32 flex items-center justify-center mb-6 w-full px-4 transform group-hover:scale-110 transition duration-500">
+                        <img src={sponsor.logo} alt={sponsor.name} className="max-h-full max-w-full object-contain" />
+                      </div>
+                      <h4 className="text-lg font-black text-[#014227] mb-2">{sponsor.name}</h4>
+                      <p className="text-xs text-gray-400 font-medium mb-4 line-clamp-2 px-2">{sponsor.description}</p>
+                      {sponsor.website && (
+                        <button
+                          onClick={() => window.open(sponsor.website, '_blank')}
+                          className="mt-auto flex items-center gap-2 text-[10px] font-black text-[#014227] uppercase tracking-widest hover:text-black transition"
+                        >
+                          <Globe size={14} className="text-[#FFD700]" />
+                          Official Site
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ));
+          })()}
+
+          {sponsorships.length === 0 && (
+            <div className="col-span-full py-20 text-center bg-white rounded-[40px] border border-dashed border-gray-200">
+              <Megaphone className="mx-auto text-gray-300 mb-4" size={48} />
+              <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">Sponsorship drive in progress</p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="bg-[#014227] rounded-[40px] p-6 md:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFD700]/10 rounded-full -mr-32 -mt-32"></div>

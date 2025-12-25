@@ -1,6 +1,6 @@
 
 export type PackageType = string;
-export type PackageCategory = 'International' | 'APDC' | 'JCI Malaysia' | 'JCI Japan' | 'JCI Korea';
+export type PackageCategory = 'APDC' | 'JCIM' | 'Int' | 'JP' | 'KR' | 'VIP';
 
 export type EventCategory = string;
 
@@ -46,6 +46,7 @@ export interface Guest {
 
   // Existing internal/tracking fields
   passportLast4: string;
+  passportId?: string;
   golfDay1?: {
     flight: string;
     teeTime: string;
@@ -85,7 +86,7 @@ export interface EventSchedule {
 export interface Sponsorship {
   id: string;
   name: string;
-  tier: 'Diamond' | 'Platinum' | 'Gold' | 'Silver';
+  tier: string;
   logo: string;
   website: string;
   description: string;

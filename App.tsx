@@ -28,10 +28,11 @@ const App: React.FC = () => {
   const [packagePermissions, setPackagePermissions] = useState<PackagePermissions>({});
   const [categoryPermissions, setCategoryPermissions] = useState<Record<PackageCategory, PermissionMeta[]>>({
     'APDC': [],
-    'JCI Malaysia': [],
-    'International': [],
-    'JCI Japan': [],
-    'JCI Korea': []
+    'JCIM': [],
+    'Int': [],
+    'JP': [],
+    'KR': [],
+    'VIP': []
   });
   const [schedules, setSchedules] = useState<EventSchedule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -512,7 +513,7 @@ service cloud.firestore {
         onViewChange={(v) => { setView(v); localStorage.setItem('userRole', v); }}
         onLogout={() => { setActiveGuest(null); setView('Guest'); localStorage.clear(); }}
       >
-        {view === 'General' && <GeneralInfo schedules={schedules} attractions={attractions} diningGuide={diningGuide} golfGroupings={golfGroupings} guests={guests} />}
+        {view === 'General' && <GeneralInfo schedules={schedules} attractions={attractions} diningGuide={diningGuide} golfGroupings={golfGroupings} guests={guests} sponsorships={sponsorships} />}
 
         {view === 'Guest' && (
           activeGuest ? (

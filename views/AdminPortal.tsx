@@ -22,7 +22,7 @@ interface AdminPortalProps {
   onUpdateSponsorships: (newList: Sponsorship[]) => void;
 }
 
-const PACKAGE_CATEGORIES: PackageCategory[] = ['International', 'APDC', 'JCI Malaysia', 'JCI Japan', 'JCI Korea'];
+const PACKAGE_CATEGORIES: PackageCategory[] = ['APDC', 'JCIM', 'Int', 'JP', 'KR', 'VIP'];
 const NATIONS = ["Malaysia", "Japan", "Korea", "Singapore", "Thailand", "Philippines", "Taiwan", "Hong Kong", "Macau", "Indonesia", "Vietnam", "Cambodia", "India", "Mongolia", "Nepal", "Bangladesh", "Sri Lanka", "Pakistan", "Maldives", "Australia", "New Zealand", "USA", "UK"];
 const TSHIRT_SIZES = ["2XS", "XS", "S", "M", "L", "2XL", "3XL", "5XL", "7XL"];
 
@@ -61,9 +61,9 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [pastedData, setPastedData] = useState('');
   const [importResult, setImportResult] = useState<{ total: number; imported: number; failed: { row: number; reason: string; data: string }[] } | null>(null);
   const [editingPackage, setEditingPackage] = useState<any>(null);
-  const [packageEditData, setPackageEditData] = useState<{ oldName?: string; newName: string; category: PackageCategory }>({ newName: '', category: 'International' });
+  const [packageEditData, setPackageEditData] = useState<{ oldName?: string; newName: string; category: PackageCategory }>({ newName: '', category: 'Int' });
   const [isPermMetaModalOpen, setIsPermMetaModalOpen] = useState(false);
-  const [permMetaEditData, setPermMetaEditData] = useState<{ category: PackageCategory; id?: string; name: string; date: string; linkedItinerary?: string[]; golfType?: 'Day1' | 'Day2' }>({ category: 'International', name: '', date: '', linkedItinerary: [] });
+  const [permMetaEditData, setPermMetaEditData] = useState<{ category: PackageCategory; id?: string; name: string; date: string; linkedItinerary?: string[]; golfType?: 'Day1' | 'Day2' }>({ category: 'Int', name: '', date: '', linkedItinerary: [] });
   const [selectedGolfers, setSelectedGolfers] = useState<string[]>([]);
 
   const activePackageTypes = Object.keys(packagePermissions) as PackageType[];
@@ -254,7 +254,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
         <div className="flex flex-wrap gap-2">
           {activeAdminTab === 'Packages' ? (
-            <button onClick={() => { setPackageEditData({ newName: '', category: 'International' }); setIsPackageModalOpen(true); }} className="bg-[#014227] text-[#FFD700] px-6 py-2.5 rounded-2xl text-xs font-black uppercase flex items-center gap-2 shadow-lg hover:bg-black transition"><Plus size={14} /><span>Add Package</span></button>
+            <button onClick={() => { setPackageEditData({ newName: '', category: 'Int' }); setIsPackageModalOpen(true); }} className="bg-[#014227] text-[#FFD700] px-6 py-2.5 rounded-2xl text-xs font-black uppercase flex items-center gap-2 shadow-lg hover:bg-black transition"><Plus size={14} /><span>Add Package</span></button>
           ) : activeAdminTab === 'Itinerary' ? (
             <div className="flex gap-2">
               <button
@@ -416,7 +416,20 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
             const pkgInCat = activePackageTypes
               .filter(p => packagePermissions[p]?.category === category)
               .sort((a, b) => a.localeCompare(b));
-            const currentPerms = [...(categoryPermissions[category] || [])].sort((a, b) => a.date.localeCompare(b.date));
+            const currentPerms = [...(categoryPermissions[category] || [])].sort((a, b) => {
+              const parse = (d: string) => {
+                if (!d) return 0;
+                if (d.includes('.')) {
+                  const p = d.split('.');
+                  return new Date(Number(p[2]), Number(p[1]) - 1, Number(p[0])).getTime();
+                }
+                const ts = Date.parse(d);
+                return isNaN(ts) ? 0 : ts;
+              };
+              const diff = parse(a.date) - parse(b.date);
+              if (diff !== 0) return diff;
+              return a.name.localeCompare(b.name);
+            });
 
             return (
               <div key={category} className="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden flex flex-col h-fit animate-in slide-in-from-bottom-4">
@@ -1104,51 +1117,69 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
           </div>
           <div className="md:hidden p-4 space-y-4 bg-gray-50/50">
-            {sponsorships.map(sponsor => (
-              <div key={sponsor.id} className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 relative group">
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <button onClick={() => setEditingItem({ type: 'Sponsors', data: sponsor })} className="p-2 text-blue-600 bg-gray-50 rounded-xl hover:bg-blue-50">
-                    <Edit3 size={14} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor') {
-                        onUpdateSponsorships(sponsorships.filter(s => s.id !== sponsor.id));
-                        setDeleteConfirm(null);
-                      } else {
-                        setDeleteConfirm({ id: sponsor.id, type: 'sponsor' });
-                      }
-                    }}
-                    className={`p-2 rounded-xl transition-all ${deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? 'bg-orange-500 text-white' : 'text-red-500 bg-gray-50'}`}
-                  >
-                    {deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? <AlertTriangle size={14} /> : <Trash2 size={14} />}
-                  </button>
+            {(() => {
+              const grouped = sponsorships.reduce((acc, s) => {
+                const tier = s.tier || 'Other';
+                if (!acc[tier]) acc[tier] = [];
+                acc[tier].push(s);
+                return acc;
+              }, {} as Record<string, Sponsorship[]>);
+
+              const sortedTiers = Object.keys(grouped).sort();
+
+              return sortedTiers.map(tier => (
+                <div key={tier} className="space-y-4">
+                  <div className="text-[10px] font-black text-[#014227] uppercase tracking-[0.2em] px-2 py-1 bg-amber-50 rounded-lg inline-block">
+                    {tier} Tier
+                  </div>
+                  {grouped[tier].map(sponsor => (
+                    <div key={sponsor.id} className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 relative group">
+                      <div className="absolute top-4 right-4 flex gap-2">
+                        <button onClick={() => setEditingItem({ type: 'Sponsors', data: sponsor })} className="p-2 text-blue-600 bg-gray-50 rounded-xl hover:bg-blue-50">
+                          <Edit3 size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor') {
+                              onUpdateSponsorships(sponsorships.filter(s => s.id !== sponsor.id));
+                              setDeleteConfirm(null);
+                            } else {
+                              setDeleteConfirm({ id: sponsor.id, type: 'sponsor' });
+                            }
+                          }}
+                          className={`p-2 rounded-xl transition-all ${deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? 'bg-orange-500 text-white' : 'text-red-500 bg-gray-50'}`}
+                        >
+                          {deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? <AlertTriangle size={14} /> : <Trash2 size={14} />}
+                        </button>
+                      </div>
+
+                      <div className="pr-16 mb-2">
+                        <h4 className="font-black text-[#014227] text-lg leading-tight">{sponsor.name}</h4>
+                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{sponsor.tier}</div>
+                      </div>
+
+                      {sponsor.logo && (
+                        <div className="mt-4">
+                          <img src={sponsor.logo} alt={`${sponsor.name} logo`} className="max-h-12 object-contain" />
+                        </div>
+                      )}
+
+                      {sponsor.website && (
+                        <div className="mt-4">
+                          <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs font-bold hover:underline">{sponsor.website}</a>
+                        </div>
+                      )}
+
+                      {sponsor.description && (
+                        <div className="mt-4 text-xs text-gray-600 leading-relaxed line-clamp-3">
+                          {sponsor.description}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-
-                <div className="pr-16 mb-2">
-                  <h4 className="font-black text-[#014227] text-lg leading-tight">{sponsor.name}</h4>
-                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{sponsor.tier}</div>
-                </div>
-
-                {sponsor.logo && (
-                  <div className="mt-4">
-                    <img src={sponsor.logo} alt={`${sponsor.name} logo`} className="max-h-12 object-contain" />
-                  </div>
-                )}
-
-                {sponsor.website && (
-                  <div className="mt-4">
-                    <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs font-bold hover:underline">{sponsor.website}</a>
-                  </div>
-                )}
-
-                {sponsor.description && (
-                  <div className="mt-4 text-xs text-gray-600 leading-relaxed line-clamp-3">
-                    {sponsor.description}
-                  </div>
-                )}
-              </div>
-            ))}
+              ));
+            })()}
             {sponsorships.length === 0 && (
               <div className="text-center p-10 text-gray-400 text-xs font-bold uppercase">No sponsors found</div>
             )}
@@ -1165,41 +1196,61 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {sponsorships.map(sponsor => (
-                  <tr key={sponsor.id} className="hover:bg-gray-50 transition group">
-                    <td className="px-8 py-6">
-                      <div className="font-black text-[#014227]">{sponsor.name}</div>
-                      {sponsor.logo && <img src={sponsor.logo} alt={`${sponsor.name} logo`} className="max-h-8 object-contain mt-2" />}
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-[9px] font-black uppercase">{sponsor.tier}</span>
-                    </td>
-                    <td className="px-8 py-6">
-                      {sponsor.website && <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline">{sponsor.website}</a>}
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="text-sm text-gray-600 max-w-md line-clamp-2">{sponsor.description}</div>
-                    </td>
-                    <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => setEditingItem({ type: 'Sponsors', data: sponsor })} className="p-2 text-blue-600 bg-white border border-gray-100 rounded-lg shadow-sm hover:bg-blue-50"><Edit3 size={12} /></button>
-                        <button
-                          onClick={() => {
-                            if (deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor') {
-                              onUpdateSponsorships(sponsorships.filter(s => s.id !== sponsor.id));
-                              setDeleteConfirm(null);
-                            } else {
-                              setDeleteConfirm({ id: sponsor.id, type: 'sponsor' });
-                            }
-                          }}
-                          className={`p-2 rounded-lg shadow-sm transition-all duration-200 ${deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? 'bg-orange-500 text-white scale-110' : 'text-red-500 bg-white border border-gray-100 hover:bg-red-50'}`}
-                        >
-                          {deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? <AlertTriangle size={12} /> : <Trash2 size={12} />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  const grouped = sponsorships.reduce((acc, s) => {
+                    const tier = s.tier || 'Other';
+                    if (!acc[tier]) acc[tier] = [];
+                    acc[tier].push(s);
+                    return acc;
+                  }, {} as Record<string, Sponsorship[]>);
+
+                  const sortedTiers = Object.keys(grouped).sort();
+
+                  return sortedTiers.map(tier => (
+                    <React.Fragment key={tier}>
+                      <tr className="bg-gray-50/50">
+                        <td colSpan={5} className="px-8 py-2 text-[9px] font-black text-[#014227] uppercase tracking-widest border-y border-gray-100 italic">
+                          {tier} Tier ({grouped[tier].length})
+                        </td>
+                      </tr>
+                      {grouped[tier].map(sponsor => (
+                        <tr key={sponsor.id} className="hover:bg-gray-50 transition group">
+                          <td className="px-8 py-6">
+                            <div className="font-black text-[#014227]">{sponsor.name}</div>
+                            {sponsor.logo && <img src={sponsor.logo} alt={`${sponsor.name} logo`} className="max-h-8 object-contain mt-2" />}
+                          </td>
+                          <td className="px-8 py-6">
+                            <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-[9px] font-black uppercase">{sponsor.tier}</span>
+                          </td>
+                          <td className="px-8 py-6">
+                            {sponsor.website && <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline">{sponsor.website}</a>}
+                          </td>
+                          <td className="px-8 py-6">
+                            <div className="text-sm text-gray-600 max-w-md line-clamp-2">{sponsor.description}</div>
+                          </td>
+                          <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => setEditingItem({ type: 'Sponsors', data: sponsor })} className="p-2 text-blue-600 bg-white border border-gray-100 rounded-lg shadow-sm hover:bg-blue-50"><Edit3 size={12} /></button>
+                              <button
+                                onClick={() => {
+                                  if (deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor') {
+                                    onUpdateSponsorships(sponsorships.filter(s => s.id !== sponsor.id));
+                                    setDeleteConfirm(null);
+                                  } else {
+                                    setDeleteConfirm({ id: sponsor.id, type: 'sponsor' });
+                                  }
+                                }}
+                                className={`p-2 rounded-lg shadow-sm transition-all duration-200 ${deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? 'bg-orange-500 text-white scale-110' : 'text-red-500 bg-white border border-gray-100 hover:bg-red-50'}`}
+                              >
+                                {deleteConfirm?.id === sponsor.id && deleteConfirm?.type === 'sponsor' ? <AlertTriangle size={12} /> : <Trash2 size={12} />}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  ));
+                })()}
               </tbody>
             </table>
           </div>
@@ -1219,7 +1270,30 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               {editingItem.type === 'Attendees' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Guest ID" value={editingItem.data.id} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, id: v } })} />
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center ml-2">
+                        <label className="text-[10px] font-black uppercase text-gray-400">Guest ID</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const pkg = editingItem.data.package;
+                            if (!pkg) { alert('Please select a package first'); return; }
+                            const cat = packagePermissions[pkg]?.category || 'Other';
+                            const samePkgCount = guests.filter(g => g.package === pkg).length + 1;
+                            const newId = `${pkg}-${String(samePkgCount).padStart(4, '0')}-${cat}`;
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, id: newId } });
+                          }}
+                          className="text-[8px] font-black text-blue-600 uppercase hover:underline"
+                        >
+                          Auto-Generate
+                        </button>
+                      </div>
+                      <input
+                        className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all"
+                        value={editingItem.data.id}
+                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, id: e.target.value } })}
+                      />
+                    </div>
                     <FormField label="Name on Tag" value={editingItem.data.nameOnTag} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, nameOnTag: v } })} />
                   </div>
                   <FormField label="Full Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} />
@@ -1266,11 +1340,15 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                         </label>
                       </div>
                     </div>
-                    <FormField label="MAIL" value={editingItem.data.email} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, email: v } })} />
+                    <FormField label="Passport / ID No." value={editingItem.data.passportId || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, passportId: v } })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Email Address" value={editingItem.data.email} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, email: v } })} />
                     <FormField label="Whatsapp" value={editingItem.data.whatsapp} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, whatsapp: v } })} />
-                    <FormField label="Line" value={editingItem.data.lineID} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, lineID: v } })} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Line ID" value={editingItem.data.lineID} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, lineID: v } })} />
+                    <FormField label="Phone" value={editingItem.data.phone} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, phone: v } })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -1462,7 +1540,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               {editingItem.type === 'Sponsors' && (
                 <>
                   <FormField label="Sponsor Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} placeholder="Company Name" />
-                  <SelectField label="Tier" value={editingItem.data.tier} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, tier: v } })} options={['Diamond', 'Platinum', 'Gold', 'Silver']} />
+                  <FormField label="Tier" value={editingItem.data.tier} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, tier: v } })} placeholder="e.g. Diamond, Platinum" />
                   <FormField label="Logo URL" value={editingItem.data.logo} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, logo: v } })} placeholder="https://..." />
                   <FormField label="Website" value={editingItem.data.website} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, website: v } })} placeholder="https://..." />
                   <FormField label="Description" value={editingItem.data.description} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: v } })} placeholder="Ad copy..." type="textarea" />
@@ -1486,17 +1564,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
               <h3 className="text-xl font-black text-[#014227] mb-8 uppercase tracking-widest">{permMetaEditData.id ? 'Modify' : 'New'} {permMetaEditData.category} Rule</h3>
               <form onSubmit={handleAddOrUpdatePermMeta} className="space-y-6">
                 <FormField label="Rule Label (e.g. Banquet)" value={permMetaEditData.name} onChange={v => setPermMetaEditData({ ...permMetaEditData, name: v })} />
-                <FormField label="Designated Day (e.g. 29 Mar)" value={permMetaEditData.date} onChange={v => setPermMetaEditData({ ...permMetaEditData, date: v })}>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Description</label>
-                    <textarea
-                      className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all resize-none"
-                      rows={2}
-                      value={editingItem.data.desc || ''}
-                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, desc: e.target.value } })}
-                    />
-                  </div>
-                </FormField>
+                <FormField label="Designated Day (e.g. 29 Mar)" value={permMetaEditData.date} onChange={v => setPermMetaEditData({ ...permMetaEditData, date: v })} />
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Linked Itineraries (Optional)</label>
                   <div className="max-h-48 overflow-y-auto space-y-4 p-4 bg-gray-50 border border-gray-100 rounded-2xl custom-scrollbar">
