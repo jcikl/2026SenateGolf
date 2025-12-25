@@ -48,11 +48,11 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
           {/* QR Frame */}
           <div className="relative mb-6">
             <div className="absolute -inset-4 bg-[#F58220]/20 rounded-full blur-2xl group-hover:bg-[#FFD700]/40 transition duration-700"></div>
-            <div className="relative bg-white p-4 rounded-[40px] shadow-2xl transform transition duration-500 group-hover:scale-110 border-2 border-[#F58220]/10">
+            <div className="relative bg-white p-4 rounded-[20px] shadow-2xl transform transition duration-500 group-hover:scale-110 border-2 border-[#F58220]/10">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${guest.docId || guest.id}`}
                 alt="QR Code"
-                className="w-32 h-32 rounded-3xl"
+                className="w-32 h-32 rounded-lg"
               />
             </div>
           </div>

@@ -113,7 +113,10 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
   const handleScan = (data: string) => {
     if (!data) return;
     const normalizedInput = data.trim().toLowerCase();
+
+    // Prioritize docId (as modern QR codes use it), then fallback to logical ID or name
     const guest = guests.find(g =>
+      (g.docId && g.docId.toLowerCase() === normalizedInput) ||
       g.id.toLowerCase() === normalizedInput ||
       g.name.toLowerCase() === normalizedInput
     );
@@ -147,10 +150,13 @@ const StaffPortal: React.FC<StaffPortalProps> = ({ guests, onUpdateGuests, sched
         }
       };
 
-      const newGuests = guests.map(g => g.id === updatedGuest.id ? updatedGuest : g);
+      // Use docId if available for identifying the guest to update in the local list
+      const newGuests = guests.map(g =>
+        (g.docId && g.docId === updatedGuest.docId) || (g.id === updatedGuest.id) ? updatedGuest : g
+      );
 
-      // Persist local storage for persistence across reloads if needed
-      localStorage.setItem('lastScannedId', scannedGuest.id);
+      // Persist local storage for persistence across reloads
+      localStorage.setItem('lastScannedId', scannedGuest.docId || scannedGuest.id);
 
       onUpdateGuests(newGuests);
 
