@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppView, Guest, EventSchedule, PackagePermissions, PackageCategory, PermissionMeta, GolfGrouping, Sponsorship } from './types';
+import { AppView, Guest, EventSchedule, PackagePermissions, PackageCategory, PermissionMeta, GolfGrouping, Sponsorship, UserRole } from './types';
 import { MOCK_GUESTS, MOCK_SCHEDULE, DEFAULT_PACKAGE_PERMISSIONS, DEFAULT_CATEGORY_PERMISSIONS } from './constants';
 import GuestPortal from './views/GuestPortal';
 import StaffPortal from './views/StaffPortal';

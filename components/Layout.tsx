@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppView } from '../types';
+import { AppView, UserRole } from '../types';
 import { LogOut, Home, UserCheck, ShieldCheck, Menu, X, Info } from 'lucide-react';
 
 interface LayoutProps {
