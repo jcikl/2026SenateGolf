@@ -425,7 +425,7 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                   <div className="h-px bg-gray-100 flex-1"></div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0 auto-rows-fr">
                   {grouped[tier].map(sponsor => (
                     <div key={sponsor.id} className="h-full bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm border border-gray-100 group hover:shadow-xl transition-all duration-500 flex flex-row md:flex-col items-stretch">
                       <div className="w-28 md:w-full md:h-32 shrink-0 relative bg-gray-50 flex items-center justify-center overflow-hidden">
