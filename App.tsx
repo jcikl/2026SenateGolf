@@ -538,6 +538,7 @@ service cloud.firestore {
     <div className="min-h-screen">
       <Layout
         currentView={view}
+        isLoggedIn={!!activeGuest}
         onViewChange={(v) => { setView(v); localStorage.setItem('userRole', v); }}
         onLogout={() => { setActiveGuest(null); setView('Guest'); localStorage.clear(); }}
       >

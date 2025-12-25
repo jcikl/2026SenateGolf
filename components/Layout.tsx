@@ -5,11 +5,12 @@ import { LogOut, Home, UserCheck, ShieldCheck, Menu, X, Info } from 'lucide-reac
 interface LayoutProps {
   children: React.ReactNode;
   currentView: AppView;
+  isLoggedIn?: boolean;
   onViewChange: (view: AppView) => void;
   onLogout: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewChange, onLogout }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, currentView, isLoggedIn, onViewChange, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   const navItems = [
@@ -21,10 +22,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewCha
 
   // Using the vertical white transparent logo for better contrast on dark green
   const logoPath = "/images/Senate Golf Logo_Vertical White (Transparent).png";
+  const mobileLogoPath = "/images/Senate Golf Logo_Vertical Black (Transparent).png";
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FFFDF5]">
-      {/* Header */}
+      {/* Desktop Header */}
       <header className="hidden md:block bg-[#014227] text-white shadow-lg sticky top-0 z-50 border-b border-[#FFD700]/30">
         <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
           <div className="flex items-center space-x-4 cursor-pointer" onClick={() => onViewChange('General')}>
@@ -34,16 +36,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewCha
                 alt="30th ASPAC Senate Golf"
                 className="h-full object-contain"
                 onError={(e) => {
-                  // Fallback to text if image fails
                   (e.target as any).style.display = 'none';
                   const fallback = (e.target as any).nextSibling;
                   if (fallback) (fallback as HTMLElement).style.display = 'flex';
                 }}
               />
-              <div className="hidden flex-col">
-                <h1 className="text-sm font-black tracking-widest leading-none">30TH ASPAC</h1>
-                <h2 className="text-[10px] font-bold text-[#FFD700] tracking-tighter uppercase">Senate Golf KL 2026</h2>
-              </div>
             </div>
           </div>
 
@@ -68,27 +65,31 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewCha
               <LogOut size={14} />
               <span>Reset</span>
             </button>
-            <button className="md:hidden text-[#FFD700]" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
-            </button>
           </div>
         </div>
+      </header>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-[#00331e] px-4 pt-2 pb-8 flex flex-col space-y-4 animate-in slide-in-from-top duration-300">
-            {navItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => { onViewChange(item.id as AppView); setIsMenuOpen(false); }}
-                className={`text-left py-3 border-b border-white/5 flex items-center space-x-3 text-sm font-black uppercase tracking-widest ${currentView === item.id ? 'text-[#FFD700]' : 'text-gray-300'}`}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))}
-            <button onClick={onLogout} className="text-left py-4 text-red-400 font-black text-xs uppercase tracking-widest">Clear Session</button>
-          </div>
+      {/* Mobile Top Header - Added Login Button */}
+      <header className="md:hidden bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div className="h-12 flex items-center" onClick={() => onViewChange('General')}>
+          <img src={mobileLogoPath} alt="Logo" className="h-full object-contain" />
+        </div>
+
+        {!isLoggedIn ? (
+          <button
+            onClick={() => onViewChange('Guest')}
+            className="bg-[#014227] text-[#FFD700] px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center space-x-2 animate-in fade-in slide-in-from-right-2"
+          >
+            <UserCheck size={14} />
+            <span>Login</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => onViewChange('Guest')}
+            className={`p-2.5 rounded-2xl transition-all border ${currentView === 'Guest' ? 'bg-[#FFD700]/10 border-[#FFD700] text-[#014227]' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+          >
+            <UserCheck size={20} />
+          </button>
         )}
       </header>
 
