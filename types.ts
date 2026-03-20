@@ -29,23 +29,23 @@ export interface Guest {
 
   country: string;
   localOrg: string;
-  senatorshipId?: string;
-  isSenator?: boolean;
+  senatorshipId?: number;
   package: PackageType;
   email: string; // MAIL
-  whatsapp: string;
+  whatsapp: number;
   lineID: string;
-  phone: string;
+  phone: number;
   tShirtSize: string;
   foodPreference: string;
   allergies: string; // Food/ Medicine Allergy
-  golfProfileFlags?: ('Day1' | 'Day2')[]; // Replaces boolean isGolfParticipant for manual overrides
+  d1Golf: boolean;
+  d1GolfFlight: string;
+  d2Golf: boolean;
+  d2GolfFlight: string;
+  golfProfileFlags?: ('Day1' | 'Day2')[]; // Keeping for compatibility or manual overrides if needed, but primary is d1Golf/d2Golf
   dinnerProfileFlags?: ('Welcome' | 'Gala')[]; // Manual overrides for dinners
-  singleOccupancy: boolean;
-  additionalRoom27Mar: boolean;
-  additionalRoom27MarType?: 'Single' | 'Twin';
-  additionalRoom28Mar: boolean;
-  additionalRoom28MarType?: 'Single' | 'Twin';
+  roomNo?: string;
+  roommate?: string;
 
   // Existing internal/tracking fields
   passportLast4: string;
@@ -66,7 +66,7 @@ export interface Guest {
   welcomeDinnerTable?: string;
   galaDinnerTable?: string;
   hotelName?: string;
-  hotelRoomType?: 'Single' | 'Twin' | 'Suite';
+  hotelRoomType?: 'Single' | 'Twin Share' | 'Suite';
   hotelCheckIn?: string;
   hotelCheckOut?: string;
   checkedInAt?: string;

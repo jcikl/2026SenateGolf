@@ -66,7 +66,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
             <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight leading-none drop-shadow-xl">{guest.name}</h2>
             <div className="flex items-center justify-center space-x-2">
               <span className="text-[11px] font-black text-white/80 uppercase tracking-widest">ID: {guest.id}</span>
-              {guest.isSenator && (
+              {guest.senatorshipId && guest.senatorshipId > 0 && (
                 <>
                   <span className="text-white/20 px-1">•</span>
                   <span className="text-[11px] font-black text-[#014227] uppercase tracking-widest flex items-center gap-1 bg-[#FFD700]/90 px-2 py-0.5 rounded-md shadow-sm">
@@ -120,8 +120,19 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
               </div>
             );
           }
+          if (guest.d1Golf) {
+            return (
+              <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-orange-100 flex flex-col items-center text-center group hover:border-[#F58220] transition duration-500">
+                <div className="w-12 h-12 bg-orange-50 text-[#F58220] rounded-2xl flex items-center justify-center mb-3">
+                  <Trophy size={24} />
+                </div>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Day 1 Golf</span>
+                <p className="text-lg font-bold text-[#F58220]">Pending Flight</p>
+              </div>
+            );
+          }
           return (
-            <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
+            <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#F58220] transition duration-500">
               <div className="w-12 h-12 bg-gray-50 text-gray-300 rounded-2xl flex items-center justify-center mb-3">
                 <Trophy size={24} />
               </div>
@@ -147,8 +158,19 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
               </div>
             );
           }
+          if (guest.d2Golf) {
+            return (
+              <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-orange-100 flex flex-col items-center text-center group hover:border-[#F58220] transition duration-500">
+                <div className="w-12 h-12 bg-orange-50 text-[#F58220] rounded-2xl flex items-center justify-center mb-3">
+                  <Trophy size={24} />
+                </div>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Day 2 Golf</span>
+                <p className="text-lg font-bold text-[#F58220]">Pending Flight</p>
+              </div>
+            );
+          }
           return (
-            <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#FFD700] transition duration-500">
+            <div className="bg-white p-4 md:p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#F58220] transition duration-500">
               <div className="w-12 h-12 bg-gray-50 text-gray-310 rounded-2xl flex items-center justify-center mb-3">
                 <Trophy size={24} />
               </div>
@@ -168,13 +190,10 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             <InfoItem label="Country/ LOM" value={`${guest.country} / ${guest.localOrg}`} />
             <InfoItem label="Merchandise" value={`${guest.tShirtSize} Size T-Shirt`} icon={<Shirt size={14} />} />
-            {guest.golfProfileFlags && guest.golfProfileFlags.length > 0 && (
-              <>
-                <InfoItem label="Tee-off Time" value={guest.golfTeeOff || 'TBA'} />
-                <InfoItem label="Buggy No" value={guest.golfBuggyNo || 'TBA'} />
-              </>
+            <InfoItem label="Hotel Arrangement" value={`${guest.hotelName || 'No Booking'}${guest.hotelRoomType ? ` (${guest.hotelRoomType})` : ''}`} />
+            {(guest.hotelCheckIn || guest.hotelCheckOut) && (
+              <InfoItem label="Stay Dates" value={`${guest.hotelCheckIn || 'TBA'} - ${guest.hotelCheckOut || 'TBA'}`} />
             )}
-            <InfoItem label="Hotel Arrangement" value={guest.hotelName || 'No Booking'} />
           </div>
         </section>
 
@@ -207,8 +226,7 @@ const GuestPortal: React.FC<GuestPortalProps> = ({ guest, schedules, packagePerm
               filteredSchedules.slice(0, 10).map(item => (
                 <div key={item.id} className="flex group">
                   <div className="w-16 md:w-20 shrink-0 relative">
-                    <p className="text-[10px] font-black text-[#014227] opacity-60 uppercase">{item.time.split(': ')[0]}</p>
-                    <p className="text-[11px] font-black text-[#014227]">{item.time}</p>
+                    <p className="ml-2 text-[11px] font-black text-[#014227]">{item.time}</p>
                     <div className="absolute top-5 left-0 bottom-[-32px] w-[2px] bg-gray-100 group-last:hidden"></div>
                   </div>
                   <div className="pb-8 pl-4 flex-1">

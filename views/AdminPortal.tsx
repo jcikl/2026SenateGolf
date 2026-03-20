@@ -93,6 +93,51 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     return () => unsubscribe();
   }, []);
 
+  const getHeaderMapping = (h: string, mode: 'guests' | 'nearby' | 'sponsors') => {
+    const s = h.toLowerCase();
+    if (mode === 'nearby') {
+      if (s.includes('name')) return 'Name';
+      if (s.includes('dist')) return 'Distance';
+      if (s.includes('desc')) return 'Description';
+      if (s.includes('type')) return 'Type';
+      if (s.includes('addr')) return 'Address';
+      if (s.includes('phone')) return 'Phone';
+      if (s.includes('hour') || s.includes('open')) return 'Hours';
+      if (s.includes('web') || s.includes('url')) return 'Website';
+      if (s.includes('map') || s.includes('location')) return 'Map Link';
+    } else {
+      if (s.includes('id') && !s.includes('line') && !s.includes('senator')) return 'ID';
+      if (s.includes('tag')) return 'Name on Tag';
+      if (s.includes('name')) return 'Full Name';
+      if (s.includes('gender')) return 'Gender';
+      if (s.includes('pos')) return 'Position';
+      if (s.includes('country')) return 'Country';
+      if (s.includes('org')) return 'Local Org';
+      if (s.includes('senator')) return 'Senatorship ID';
+      if (s.includes('pass') || (s.includes('id') && s.includes('no'))) return 'Passport / ID No.';
+      if (s.includes('pack')) return 'Package';
+      if (s.includes('mail')) return 'Email';
+      if (s.includes('app')) return 'Whatsapp';
+      if (s.includes('line')) return 'Line ID';
+      if (s.includes('phone')) return 'Phone';
+      if (s.includes('shirt')) return 'T-Shirt Size';
+      if (s.includes('pref')) return 'Food Preference';
+      if (s.includes('allergy') || s.includes('medic')) return 'Allergies';
+      if (s.includes('d1') && s.includes('golf')) return 'D1 Golf';
+      if (s.includes('d1') && s.includes('flight')) return 'D1 Golf Flight';
+      if (s.includes('d2') && s.includes('golf')) return 'D2 Golf';
+      if (s.includes('d2') && s.includes('flight')) return 'D2 Golf Flight';
+      if (s.includes('room') && s.includes('type')) return 'Room Type';
+      if (s.includes('check') && s.includes('in')) return 'Room Check In';
+      if (s.includes('check') && s.includes('out')) return 'Room Check Out';
+      if (s.includes('welcome') && s.includes('table')) return 'Welcome Dinner Table';
+      if (s.includes('gala') && s.includes('table')) return 'Gala Dinner Table';
+      if (s.includes('room') && s.includes('no')) return 'Room No';
+      if (s.includes('roommate')) return 'Roommate';
+    }
+    return null;
+  };
+
   const activePackageTypes = Object.keys(packagePermissions) as PackageType[];
 
   const togglePermission = (pkg: PackageType, permId: string) => {
@@ -298,8 +343,21 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
           ) : activeAdminTab === 'Golf' ? (
             null
           ) : (
-            <button onClick={() => {
-              const baseData = { id: `temp_${Date.now()}`, name: '', date: sortedDatesFromSchedule[0] || '' };
+              <button onClick={() => {
+              let baseData: any = { id: `temp_${Date.now()}`, name: '', date: sortedDatesFromSchedule[0] || '' };
+              if (activeAdminTab === 'Attendees') {
+                baseData = {
+                  id: '', name: '', nameOnTag: '', gender: 'Male', position: '',
+                  country: '', localOrg: '', senatorshipId: 0, passportId: '',
+                  email: '', whatsapp: 0, lineID: '', phone: 0,
+                  package: '', tShirtSize: '', foodPreference: 'Non-Vegetarian', allergies: '',
+                  welcomeDinnerTable: '', galaDinnerTable: '',
+                  d1Golf: false, d1GolfFlight: '', d2Golf: false, d2GolfFlight: '',
+                  hotelRoomType: '', hotelCheckIn: '', hotelCheckOut: '',
+                  roomNo: '', roommate: '',
+                  dinnerProfileFlags: [], golfProfileFlags: []
+                };
+              }
               setEditingItem({ type: activeAdminTab, data: baseData });
             }} className="bg-[#014227] text-[#FFD700] px-6 py-2.5 rounded-2xl text-xs font-black uppercase flex items-center gap-2 shadow-lg hover:bg-black transition"><Plus size={14} /><span>Add {activeAdminTab.slice(0, -1)}</span></button>
           )}
@@ -409,7 +467,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                       <td className="px-6 py-6 whitespace-nowrap">
                         <div className="font-black text-[#014227]">{guest.name}</div>
                         <div className="text-[10px] font-bold text-gray-400 uppercase">{guest.id} • {guest.gender}</div>
-                        {guest.isSenator && <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest mt-1 block">Senator {guest.senatorshipId}</span>}
+                        {guest.senatorshipId && guest.senatorshipId > 0 && <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest mt-1 block">Senator {guest.senatorshipId}</span>}
                       </td>
                       <td className="px-6 py-6 whitespace-nowrap">
                         <span className="bg-[#014227] text-[#FFD700] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">{guest.package}</span>
@@ -432,20 +490,26 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                         {guest.allergies && <div className="text-[9px] font-black text-red-500 uppercase max-w-[150px] truncate" title={guest.allergies}>⚠ {guest.allergies}</div>}
                       </td>
                       <td className="px-6 py-6 whitespace-nowrap space-y-1">
-                        {guest.golfProfileFlags && guest.golfProfileFlags.length > 0 && (
-                          <div className="text-[9px] font-black text-[#014227] uppercase">Golf: {guest.golfProfileFlags.join(', ')}</div>
-                        )}
-                        {guest.dinnerProfileFlags && guest.dinnerProfileFlags.length > 0 && (
-                          <div className="text-[9px] font-black text-amber-600 uppercase">Dinner: {guest.dinnerProfileFlags.join(', ')}</div>
-                        )}
-                        {!guest.golfProfileFlags?.length && !guest.dinnerProfileFlags?.length && <span className="text-gray-300 text-[9px] font-bold uppercase">-</span>}
+                        <div className="flex flex-col gap-1">
+                          {guest.d1Golf && <div className="text-[8px] font-black text-green-700 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 uppercase tracking-tighter">D1: {guest.d1GolfFlight || 'WAITING'}</div>}
+                          {guest.d2Golf && <div className="text-[8px] font-black text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-tighter">D2: {guest.d2GolfFlight || 'WAITING'}</div>}
+                          {guest.golfProfileFlags && guest.golfProfileFlags.length > 0 && (
+                            <div className="text-[7px] font-black text-gray-400 uppercase italic">Flag: {guest.golfProfileFlags.join(', ')}</div>
+                          )}
+                          {!guest.d1Golf && !guest.d2Golf && <span className="text-gray-300 text-[9px] font-bold uppercase">-</span>}
+                        </div>
                       </td>
                       <td className="px-6 py-6 whitespace-nowrap space-y-1">
                         <div className="text-[9px] font-bold">W: {guest.welcomeDinnerTable || '-'} / G: {guest.galaDinnerTable || '-'}</div>
-                        {guest.hotelName && (
-                          <div className="text-[9px] font-bold text-blue-600 truncate max-w-[150px]" title={`${guest.hotelName} (${guest.hotelRoomType})`}>{guest.hotelName}</div>
+                        {guest.hotelRoomType && (
+                          <div className="text-[9px] font-black text-blue-600 uppercase flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            {guest.hotelRoomType}
+                          </div>
                         )}
-                        {guest.singleOccupancy && <span className="text-[8px] font-black text-gray-400 uppercase border border-gray-200 px-1 rounded">Single</span>}
+                        {(guest.hotelCheckIn || guest.hotelCheckOut) && (
+                          <div className="text-[8px] text-gray-400 font-bold uppercase">{guest.hotelCheckIn || 'TBA'} - {guest.hotelCheckOut || 'TBA'}</div>
+                        )}
                       </td>
                       <td className="px-8 py-6 text-right opacity-0 group-hover:opacity-100 transition">
                         <div className="flex justify-end gap-2">
@@ -1649,193 +1713,208 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
             <form onSubmit={handleSaveItem} className="p-8 space-y-6 overflow-y-auto bg-white">
               {editingItem.type === 'Attendees' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center ml-2">
-                        <label className="text-[10px] font-black uppercase text-gray-400">Guest ID</label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const pkg = editingItem.data.package;
-                            if (!pkg) { alert('Please select a package first'); return; }
-                            const cat = packagePermissions[pkg]?.category || 'Other';
-                            const samePkgCount = guests.filter(g => g.package === pkg).length + 1;
-                            const newId = `${pkg}-${String(samePkgCount).padStart(4, '0')}-${cat}`;
-                            setEditingItem({ ...editingItem, data: { ...editingItem.data, id: newId } });
-                          }}
-                          className="text-[8px] font-black text-blue-600 uppercase hover:underline"
-                        >
-                          Auto-Generate
-                        </button>
+                <div className="space-y-8">
+                  {/* Phase 1: Identity */}
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase text-[#014227] opacity-40 tracking-[0.2em] border-b border-gray-100 pb-2">1. Identity</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center ml-2">
+                          <label className="text-[10px] font-black uppercase text-gray-400">ID / Registration No.</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const pkg = editingItem.data.package;
+                              if (!pkg) { alert('Please select a package first'); return; }
+                              const pkgCode = pkg.includes('Delegate') ? (pkg.includes('JP') ? 'JP' : 'INT') : 'GUEST';
+                              const count = guests.length + 1;
+                              const newId = `SGF-${pkgCode}-${count.toString().padStart(4, '0')}`;
+                              setEditingItem({ ...editingItem, data: { ...editingItem.data, id: newId } });
+                            }}
+                            className="text-[9px] font-black text-[#014227] hover:underline uppercase"
+                          >
+                            Auto-Gen
+                          </button>
+                        </div>
+                        <input
+                          className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all"
+                          value={editingItem.data.id}
+                          onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, id: e.target.value } })}
+                        />
                       </div>
-                      <input
-                        className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none shadow-sm focus:ring-4 focus:ring-[#FFD700]/10 focus:border-[#FFD700] transition-all"
-                        value={editingItem.data.id}
-                        onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, id: e.target.value } })}
-                      />
+                      <FormField label="Name on Tag" value={editingItem.data.nameOnTag} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, nameOnTag: v } })} />
                     </div>
-                    <FormField label="Name on Tag" value={editingItem.data.nameOnTag} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, nameOnTag: v } })} />
-                  </div>
-                  <FormField label="Full Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Gender</label>
-                      <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1">
-                        <button
-                          type="button"
-                          onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, gender: 'Male' } })}
-                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.gender === 'Male' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                          Male
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, gender: 'Female' } })}
-                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.gender === 'Female' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                          Female
-                        </button>
+                    <FormField label="Full Name" value={editingItem.data.name} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: v } })} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Gender</label>
+                        <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1">
+                          {['Male', 'Female'].map(g => (
+                            <button
+                              key={g}
+                              type="button"
+                              onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, gender: g } })}
+                              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.gender === g ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                              {g}
+                            </button>
+                          ))}
+                        </div>
                       </div>
+                      <FormField label="Position" value={editingItem.data.position} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, position: v } })} />
                     </div>
-                    <FormField label="Position" value={editingItem.data.position} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, position: v } })} />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <SelectField label="Country" value={editingItem.data.country} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, country: v } })} options={NATIONS} />
-                    <FormField label="Local Organisation" value={editingItem.data.localOrg} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, localOrg: v } })} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex gap-2 items-end">
-                      <div className="flex-1">
-                        <FormField label="Senatorship ID" value={editingItem.data.senatorshipId} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, senatorshipId: v } })} />
-                      </div>
-                      <div className="pb-3">
-                        <label className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={!!editingItem.data.isSenator}
-                            onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, isSenator: e.target.checked } })}
-                            className="rounded border-gray-300 text-[#014227] focus:ring-[#014227] w-5 h-5"
-                          />
-                          <span className="text-[10px] font-black uppercase text-gray-400">Senator</span>
-                        </label>
-                      </div>
-                    </div>
-                    <FormField label="Passport / ID No." value={editingItem.data.passportId || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, passportId: v } })} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Email Address" value={editingItem.data.email} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, email: v } })} />
-                    <FormField label="Whatsapp" value={editingItem.data.whatsapp} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, whatsapp: v } })} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Line ID" value={editingItem.data.lineID} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, lineID: v } })} />
-                    <FormField label="Phone" value={editingItem.data.phone} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, phone: v } })} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Food Preference</label>
-                      <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1">
-                        <button
-                          type="button"
-                          onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, foodPreference: 'Non-Vegetarian' } })}
-                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.foodPreference !== 'Vegetarian' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                          Non-Veg
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, foodPreference: 'Vegetarian' } })}
-                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.foodPreference === 'Vegetarian' ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                          Vegetarian
-                        </button>
-                      </div>
-                    </div>
-                    <FormField label="Food/Medicine Allergy" value={editingItem.data.allergies} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, allergies: v } })} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Package</label>
-                      <select className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none" value={editingItem.data.package} onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, package: e.target.value } })}>
-                        <option value="">-- SELECT PACKAGE --</option>
-                        {PACKAGE_CATEGORIES.map(category => {
-                          const pkgs = activePackageTypes.filter(p => packagePermissions[p]?.category === category).sort();
-                          if (pkgs.length === 0) return null;
-                          return (
-                            <optgroup key={category} label={category}>
-                              {pkgs.map(p => <option key={p} value={p}>{p}</option>)}
-                            </optgroup>
-                          );
-                        })}
-                      </select>
-                    </div>
-                    <SelectField label="T-Shirt Size" value={editingItem.data.tShirtSize} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, tShirtSize: v } })} options={TSHIRT_SIZES} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Welcome Dinner Table" value={editingItem.data.welcomeDinnerTable || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, welcomeDinnerTable: v } })} placeholder="e.g., Table 12" />
-                    <FormField label="Gala Dinner Table" value={editingItem.data.galaDinnerTable || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, galaDinnerTable: v } })} placeholder="e.g., Table 05" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 pt-4">
-                    <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-4 gap-4 items-center">
-                      <span className="text-[10px] font-black uppercase text-gray-400">Dinner Manual Override</span>
-                      <CheckboxField
-                        label="Welcome"
-                        checked={editingItem.data.dinnerProfileFlags?.includes('Welcome') || false}
-                        onChange={v => {
-                          const current = editingItem.data.dinnerProfileFlags || [];
-                          const next = v ? [...current, 'Welcome'] : current.filter((f: string) => f !== 'Welcome');
-                          setEditingItem({ ...editingItem, data: { ...editingItem.data, dinnerProfileFlags: next } });
-                        }}
-                      />
-                      <CheckboxField
-                        label="Gala"
-                        checked={editingItem.data.dinnerProfileFlags?.includes('Gala') || false}
-                        onChange={v => {
-                          const current = editingItem.data.dinnerProfileFlags || [];
-                          const next = v ? [...current, 'Gala'] : current.filter((f: string) => f !== 'Gala');
-                          setEditingItem({ ...editingItem, data: { ...editingItem.data, dinnerProfileFlags: next } });
-                        }}
-                      />
-                    </div>
-                    <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-4 gap-4 items-center">
-                      <span className="text-[10px] font-black uppercase text-gray-400">Golf Manual Override</span>
-                      <CheckboxField
-                        label="Day 1"
-                        checked={editingItem.data.golfProfileFlags?.includes('Day1') || false}
-                        onChange={v => {
-                          const current = editingItem.data.golfProfileFlags || [];
-                          const next = v ? [...current, 'Day1'] : current.filter((f: string) => f !== 'Day1');
-                          setEditingItem({ ...editingItem, data: { ...editingItem.data, golfProfileFlags: next } });
-                        }}
-                      />
-                      <CheckboxField
-                        label="Day 2"
-                        checked={editingItem.data.golfProfileFlags?.includes('Day2') || false}
-                        onChange={v => {
-                          const current = editingItem.data.golfProfileFlags || [];
-                          const next = v ? [...current, 'Day2'] : current.filter((f: string) => f !== 'Day2');
-                          setEditingItem({ ...editingItem, data: { ...editingItem.data, golfProfileFlags: next } });
-                        }}
-                      />
-                    </div>
-                    <CheckboxField label="Single Occupancy" checked={editingItem.data.singleOccupancy} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, singleOccupancy: v } })} />
 
-                    <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className={`space-y-2 p-4 rounded-2xl border transition-all ${editingItem.data.additionalRoom27Mar ? 'bg-[#fffbeb] border-[#FFD700]' : 'bg-gray-50 border-gray-100'}`}>
-                        <CheckboxField label="Additional Rm (27 Mar)" checked={editingItem.data.additionalRoom27Mar} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom27Mar: v } })} />
-                        {editingItem.data.additionalRoom27Mar && (
-                          <div className="animate-in slide-in-from-top-2">
-                            <SelectField label="Room Type" value={editingItem.data.additionalRoom27MarType} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom27MarType: v } })} options={['Single', 'Twin']} />
-                          </div>
-                        )}
+                  {/* Phase 2: Affiliation */}
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase text-[#014227] opacity-40 tracking-[0.2em] border-b border-gray-100 pb-2">2. Affiliation</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SelectField label="Country" value={editingItem.data.country} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, country: v } })} options={NATIONS} />
+                      <FormField label="Local Organisation" value={editingItem.data.localOrg} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, localOrg: v } })} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField label="Senatorship ID" value={editingItem.data.senatorshipId} type="number" onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, senatorshipId: parseInt(v) || 0 } })} />
+                      <FormField label="Passport / ID No." value={editingItem.data.passportId || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, passportId: v } })} />
+                    </div>
+                  </div>
+
+                  {/* Phase 3: Contact */}
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase text-[#014227] opacity-40 tracking-[0.2em] border-b border-gray-100 pb-2">3. Contact</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField label="Email Address" value={editingItem.data.email} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, email: v } })} />
+                      <FormField label="Whatsapp" value={editingItem.data.whatsapp} type="number" onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, whatsapp: parseInt(v) || 0 } })} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField label="Line ID" value={editingItem.data.lineID} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, lineID: v } })} />
+                      <FormField label="Phone" value={editingItem.data.phone} type="number" onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, phone: parseInt(v) || 0 } })} />
+                    </div>
+                  </div>
+
+                  {/* Phase 4: Preferences */}
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase text-[#014227] opacity-40 tracking-[0.2em] border-b border-gray-100 pb-2">4. Preferences</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Package</label>
+                        <select className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold outline-none" value={editingItem.data.package} onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, package: e.target.value } })}>
+                          <option value="">-- SELECT PACKAGE --</option>
+                          {PACKAGE_CATEGORIES.map(category => {
+                            const pkgs = activePackageTypes.filter(p => packagePermissions[p]?.category === category).sort();
+                            if (pkgs.length === 0) return null;
+                            return (
+                              <optgroup key={category} label={category}>
+                                {pkgs.map(p => <option key={p} value={p}>{p}</option>)}
+                              </optgroup>
+                            );
+                          })}
+                        </select>
                       </div>
-                      <div className={`space-y-2 p-4 rounded-2xl border transition-all ${editingItem.data.additionalRoom28Mar ? 'bg-[#fffbeb] border-[#FFD700]' : 'bg-gray-50 border-gray-100'}`}>
-                        <CheckboxField label="Additional Rm (28 Mar)" checked={editingItem.data.additionalRoom28Mar} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom28Mar: v } })} />
-                        {editingItem.data.additionalRoom28Mar && (
-                          <div className="animate-in slide-in-from-top-2">
-                            <SelectField label="Room Type" value={editingItem.data.additionalRoom28MarType} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, additionalRoom28MarType: v } })} options={['Single', 'Twin']} />
-                          </div>
-                        )}
+                      <SelectField label="T-Shirt Size" value={editingItem.data.tShirtSize} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, tShirtSize: v } })} options={TSHIRT_SIZES} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Food Preference</label>
+                        <div className="flex bg-gray-50 border border-gray-100 rounded-2xl p-1">
+                          {['Non-Vegetarian', 'Vegetarian'].map(f => (
+                            <button
+                              key={f}
+                              type="button"
+                              onClick={() => setEditingItem({ ...editingItem, data: { ...editingItem.data, foodPreference: f } })}
+                              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${editingItem.data.foodPreference === f ? 'bg-[#014227] text-[#FFD700] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                              {f.replace('-Vegetarian', '')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <FormField label="Allergies" value={editingItem.data.allergies} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, allergies: v } })} />
+                    </div>
+                  </div>
+
+                  {/* Phase 5: Dinner Logistics */}
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase text-[#014227] opacity-40 tracking-[0.2em] border-b border-gray-100 pb-2">5. Dinner Tables</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField label="Welcome Dinner Table" value={editingItem.data.welcomeDinnerTable || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, welcomeDinnerTable: v } })} placeholder="e.g., Table 12" />
+                      <FormField label="Gala Dinner Table" value={editingItem.data.galaDinnerTable || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, galaDinnerTable: v } })} placeholder="e.g., Table 05" />
+                    </div>
+                  </div>
+
+                  {/* Phase 6: Golf Logic */}
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase text-[#014227] opacity-40 tracking-[0.2em] border-b border-gray-100 pb-2">6. Golf Participation</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2 p-4 bg-gray-50 border border-gray-100 rounded-2xl">
+                        <CheckboxField label="D1 Golf (Player)" checked={!!editingItem.data.d1Golf} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, d1Golf: v } })} />
+                        <FormField label="D1 Flight" value={editingItem.data.d1GolfFlight || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, d1GolfFlight: v } })} />
+                      </div>
+                      <div className="space-y-2 p-4 bg-gray-50 border border-gray-100 rounded-2xl">
+                        <CheckboxField label="D2 Golf (Player)" checked={!!editingItem.data.d2Golf} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, d2Golf: v } })} />
+                        <FormField label="D2 Flight" value={editingItem.data.d2GolfFlight || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, d2GolfFlight: v } })} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phase 7: Accommodation */}
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-black uppercase text-[#014227] opacity-40 tracking-[0.2em] border-b border-gray-100 pb-2">7. Hotel Logistics</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <SelectField label="Room Type" value={editingItem.data.hotelRoomType || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, hotelRoomType: v } })} options={['Single', 'Twin Share', 'Suite']} />
+                      <FormField label="Room Check In" value={editingItem.data.hotelCheckIn || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, hotelCheckIn: v } })} placeholder="DD MMM YYYY" />
+                      <FormField label="Room Check Out" value={editingItem.data.hotelCheckOut || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, hotelCheckOut: v } })} placeholder="DD MMM YYYY" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField label="Room No" value={editingItem.data.roomNo || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, roomNo: v } })} placeholder="e.g., 1201" />
+                      <FormField label="Roommate" value={editingItem.data.roommate || ''} onChange={v => setEditingItem({ ...editingItem, data: { ...editingItem.data, roommate: v } })} placeholder="Name of roommate" />
+                    </div>
+                  </div>
+
+                  {/* Phase 8: Overrides (Staff Only) */}
+                  <div className="space-y-4 pt-4 border-t border-[#014227]/10">
+                    <h4 className="text-[10px] font-black uppercase text-red-500 opacity-60 tracking-[0.2em]">Staff Overrides</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex bg-gray-50 border border-red-50 rounded-2xl p-4 gap-4 items-center">
+                        <span className="text-[9px] font-black uppercase text-gray-400">Dinner Portal</span>
+                        <CheckboxField
+                          label="Welcome"
+                          checked={editingItem.data.dinnerProfileFlags?.includes('Welcome') || false}
+                          onChange={v => {
+                            const current = editingItem.data.dinnerProfileFlags || [];
+                            const next = v ? [...current, 'Welcome'] : current.filter((f: string) => f !== 'Welcome');
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, dinnerProfileFlags: next } });
+                          }}
+                        />
+                        <CheckboxField
+                          label="Gala"
+                          checked={editingItem.data.dinnerProfileFlags?.includes('Gala') || false}
+                          onChange={v => {
+                            const current = editingItem.data.dinnerProfileFlags || [];
+                            const next = v ? [...current, 'Gala'] : current.filter((f: string) => f !== 'Gala');
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, dinnerProfileFlags: next } });
+                          }}
+                        />
+                      </div>
+                      <div className="flex bg-gray-50 border border-red-50 rounded-2xl p-4 gap-4 items-center">
+                        <span className="text-[9px] font-black uppercase text-gray-400">Golf Day 1/2</span>
+                        <CheckboxField
+                          label="D1"
+                          checked={editingItem.data.golfProfileFlags?.includes('Day1') || false}
+                          onChange={v => {
+                            const current = editingItem.data.golfProfileFlags || [];
+                            const next = v ? [...current, 'Day1'] : current.filter((f: string) => f !== 'Day1');
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, golfProfileFlags: next } });
+                          }}
+                        />
+                        <CheckboxField
+                          label="D2"
+                          checked={editingItem.data.golfProfileFlags?.includes('Day2') || false}
+                          onChange={v => {
+                            const current = editingItem.data.golfProfileFlags || [];
+                            const next = v ? [...current, 'Day2'] : current.filter((f: string) => f !== 'Day2');
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, golfProfileFlags: next } });
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -2173,6 +2252,18 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                       </div>
                       <h4 className="text-xl font-black text-[#014227] uppercase tracking-tight mb-2">Click Here & Press Ctrl+V</h4>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Paste your Excel or CSV data</p>
+
+                      <div className="mt-8 px-6 py-4 bg-white/50 rounded-2xl border border-gray-100 max-w-lg">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Supported Headers (Fuzzy Match):</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {(pasteMode === 'nearby'
+                            ? ['Name', 'Dist', 'Desc', 'Type', 'Addr', 'Phone', 'Hour', 'Web', 'Map']
+                            : ['ID', 'Name', 'Tag', 'Gender', 'Position', 'Country', 'Org', 'Senatorship ID', 'Passport / ID No.', 'Pack', 'Mail', 'App', 'Line', 'Phone', 'Shirt', 'Pref', 'Allergies', 'Welcome Table', 'Gala Table', 'Room No', 'Roommate', 'D1 Golf', 'D1 Flight', 'D2 Golf', 'D2 Flight', 'Room Type', 'Check In', 'Check Out']
+                          ).map(h => (
+                            <span key={h} className="px-2 py-1 bg-white border border-gray-100 rounded-lg text-[9px] font-bold text-[#014227] shadow-sm uppercase">{h}</span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex-1 flex flex-col overflow-hidden">
@@ -2190,7 +2281,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                               <tr>
                                 {importPreview[0].map((header, i) => (
                                   <th key={i} className="px-5 py-4 bg-[#FFFBEB] text-[#014227] text-[10px] font-black uppercase tracking-widest border-b border-r border-gray-100 last:border-r-0 whitespace-nowrap sticky top-0 z-10">
-                                    {header}
+                                    <div className="flex flex-col gap-1">
+                                      <span className="opacity-50 text-[8px] leading-none">{header}</span>
+                                      <span className={`px-2 py-1 rounded-lg text-[9px] font-black w-fit uppercase ${getHeaderMapping(header, pasteMode) ? 'bg-[#014227] text-[#FFD700]' : 'bg-gray-100 text-gray-400'}`}>
+                                        {getHeaderMapping(header, pasteMode) || 'IGNORED'}
+                                      </span>
+                                    </div>
                                   </th>
                                 ))}
                               </tr>
@@ -2285,27 +2381,41 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
                                 rows.forEach((values, rowIdx) => {
                                   try {
-                                    const g: any = { checkInCount: 0, passportLast4: '' };
+                                    const g: any = { checkInCount: 0, passportLast4: '', d1Golf: false, d2Golf: false, d1GolfFlight: '', d2GolfFlight: '' };
                                     let hasId = false;
 
                                     headers.forEach((h, i) => {
                                       const val = values[i];
+                                      const isTrue = val?.toLowerCase() === 'yes' || val?.toLowerCase() === 'true';
+
                                       if (h.includes('id') && !h.includes('line') && !h.includes('senator')) { g.id = val; hasId = true; }
                                       else if (h.includes('tag')) g.nameOnTag = val;
                                       else if (h.includes('name')) g.name = val;
+                                      else if (h.includes('gender')) g.gender = val;
+                                      else if (h.includes('pos')) g.position = val;
                                       else if (h.includes('country')) g.country = val;
                                       else if (h.includes('org')) g.localOrg = val;
-                                      else if (h.includes('senator')) g.senatorshipId = val;
+                                      else if (h.includes('senator')) g.senatorshipId = parseInt(val) || 0;
+                                      else if (h.includes('pass') || (h.includes('id') && h.includes('no'))) g.passportId = val;
                                       else if (h.includes('pack')) g.package = val;
                                       else if (h.includes('mail')) g.email = val;
-                                      else if (h.includes('app')) g.whatsapp = val;
+                                      else if (h.includes('app')) g.whatsapp = parseInt(val.replace(/\D/g, '')) || 0;
                                       else if (h.includes('line')) g.lineID = val;
-                                      else if (h.includes('phone')) g.phone = val;
+                                      else if (h.includes('phone')) g.phone = parseInt(val.replace(/\D/g, '')) || 0;
                                       else if (h.includes('shirt')) g.tShirtSize = val;
                                       else if (h.includes('pref')) g.foodPreference = val;
                                       else if (h.includes('allergy') || h.includes('medic')) g.allergies = val;
-                                      else if (h.includes('golf')) g.isGolfParticipant = val?.toLowerCase() === 'yes' || val?.toLowerCase() === 'true';
-                                      else if (h.includes('single')) g.singleOccupancy = val?.toLowerCase() === 'yes' || val?.toLowerCase() === 'true';
+                                      else if (h.includes('d1') && h.includes('golf')) g.d1Golf = isTrue;
+                                      else if (h.includes('d1') && h.includes('flight')) g.d1GolfFlight = val;
+                                      else if (h.includes('d2') && h.includes('golf')) g.d2Golf = isTrue;
+                                      else if (h.includes('d2') && h.includes('flight')) g.d2GolfFlight = val;
+                                      else if (h.includes('room') && h.includes('type')) g.hotelRoomType = val;
+                                      else if (h.includes('check') && h.includes('in')) g.hotelCheckIn = val;
+                                      else if (h.includes('check') && h.includes('out')) g.hotelCheckOut = val;
+                                      else if (h.includes('welcome') && h.includes('table')) g.welcomeDinnerTable = val;
+                                      else if (h.includes('gala') && h.includes('table')) g.galaDinnerTable = val;
+                                      else if (h.includes('room') && h.includes('no')) g.roomNo = val;
+                                      else if (h.includes('roommate')) g.roommate = val;
                                     });
 
                                     if (!hasId || !g.name) throw new Error('Missing ID or Name');
