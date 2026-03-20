@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Guest, PackageType, PackageCategory, EventSchedule, PackagePermissions, PermissionMeta, GolfGrouping, Sponsorship } from '../types';
-import { Users, Filter, ClipboardPaste, X, CheckCircle2, Calendar, MapPin, Plus, Trash2, Edit3, Save, Check, Square, Edit, Tag, Clock, ChevronRight, RefreshCw, ChevronDown, AlertTriangle, Trophy, Megaphone, Armchair } from 'lucide-react';
+import { Users, Filter, ClipboardPaste, X, CheckCircle2, Calendar, MapPin, Plus, Trash2, Edit3, Save, Check, Square, Edit, Tag, Clock, ChevronRight, RefreshCw, ChevronDown, AlertTriangle, Trophy, Megaphone, Armchair, Copy } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, onSnapshot, increment, setDoc } from 'firebase/firestore';
 
@@ -2253,8 +2253,28 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
                       <h4 className="text-xl font-black text-[#014227] uppercase tracking-tight mb-2">Click Here & Press Ctrl+V</h4>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Paste your Excel or CSV data</p>
 
-                      <div className="mt-8 px-6 py-4 bg-white/50 rounded-2xl border border-gray-100 max-w-lg">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Supported Headers (Fuzzy Match):</p>
+                      <div className="mt-8 px-6 py-4 bg-white/50 rounded-2xl border border-gray-100 max-w-lg w-full">
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Supported Headers (Fuzzy Match)</p>
+                          <button
+                            onClick={() => {
+                              const list = pasteMode === 'nearby'
+                                ? ['Name', 'Distance', 'Description', 'Type', 'Address', 'Phone', 'Hours', 'Website', 'Map Link']
+                                : [
+                                    'ID', 'Name on Tag', 'Full Name', 'Gender', 'Position', 'Country', 'Local Org', 'Senatorship ID', 'Passport / ID No.',
+                                    'Package', 'Email', 'Whatsapp', 'Line ID', 'Phone', 'T-Shirt Size', 'Food Preference', 'Allergies',
+                                    'D1 Golf', 'D1 Golf Flight', 'D2 Golf', 'D2 Golf Flight', 'Room Type', 'Room Check In', 'Room Check Out',
+                                    'Welcome Dinner Table', 'Gala Dinner Table', 'Room No', 'Roommate'
+                                  ];
+                              navigator.clipboard.writeText(list.join('\t'));
+                              window.alert('Headers copied! Paste into Excel header row.');
+                            }}
+                            className="text-[9px] font-black uppercase tracking-widest text-[#014227] bg-[#014227]/5 hover:bg-[#014227]/10 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 border border-[#014227]/10"
+                          >
+                            <Copy size={10} />
+                            Copy Row
+                          </button>
+                        </div>
                         <div className="flex flex-wrap gap-2 justify-center">
                           {(pasteMode === 'nearby'
                             ? ['Name', 'Dist', 'Desc', 'Type', 'Addr', 'Phone', 'Hour', 'Web', 'Map']

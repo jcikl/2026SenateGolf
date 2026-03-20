@@ -35,12 +35,52 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
   const [nearbyFilter, setNearbyFilter] = useState('All');
 
-  const getLinkPreview = (url: string) => {
-    if (!url) return null;
-    // If it's a direct image URL (basic check), return as is
-    if (url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i)) return url;
-    // Otherwise use microlink to get the metadata thumbnail image (og:image)
-    return `https://api.microlink.io/?url=${encodeURIComponent(url)}&embed=image.url`;
+  const PreviewImage: React.FC<{ url: string, alt: string, className?: string, fallbackIcon?: React.ReactNode }> = ({ url, alt, className, fallbackIcon }) => {
+    const [thumb, setThumb] = useState<string | null>(null);
+    const [error, setError] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      if (!url) {
+        setLoading(false);
+        return;
+      }
+      if (url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i)) {
+        setThumb(url);
+        setLoading(false);
+        return;
+      }
+
+      // Option 2: Coaching the URL for Google Maps
+      // If it's a map link, search for the 'Name' instead to get a location photo
+      let fetchUrl = url;
+      if (url.includes('google.com/maps') || url.includes('goo.gl/maps')) {
+        // Use a search query which is more likely to return a photo from OG metadata
+        fetchUrl = `https://www.google.com/search?q=${encodeURIComponent(alt)}`;
+      }
+
+      fetch(`https://previewbox.link/api/v1/meta?url=${encodeURIComponent(fetchUrl)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.imageUrl) setThumb(data.imageUrl);
+          else if (data && data.image) setThumb(data.image);
+          else setError(true);
+        })
+        .catch(() => setError(true))
+        .finally(() => setLoading(false));
+    }, [url, alt]);
+
+    if (loading) return <div className="w-full h-full bg-gray-50 animate-pulse" />;
+    if (error || !thumb) return <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">{fallbackIcon || <Landmark size={32} className="opacity-20" />}</div>;
+
+    return (
+      <img
+        src={thumb}
+        alt={alt}
+        className={className}
+        onError={() => setError(true)}
+      />
+    );
   };
   const parseTime = (t: string) => {
     const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -275,19 +315,17 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                 .map(place => (
                   <div key={place.id} className="h-full bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm border border-gray-100 group hover:shadow-xl transition-all duration-500 flex flex-row md:flex-col items-stretch">
                     <div className="w-28 md:w-full md:h-32 shrink-0 relative bg-gray-50 flex items-center justify-center overflow-hidden">
-                      {place.img && !imgErrors[place.id] ? (
-                        <img
-                          src={getLinkPreview(place.img) || ''}
-                          alt={place.name}
-                          className="w-full h-full object-cover transition duration-700 group-hover:scale-110"
-                          onError={() => setImgErrors(prev => ({ ...prev, [place.id]: true }))}
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center gap-1 text-gray-300">
-                          <Landmark size={32} className="opacity-20" />
-                          <span className="text-[8px] font-black uppercase tracking-tighter opacity-10">Map Link</span>
-                        </div>
-                      )}
+                      <PreviewImage
+                        url={place.img}
+                        alt={place.name}
+                        className="w-full h-full object-cover transition duration-700 group-hover:scale-110"
+                        fallbackIcon={
+                          <div className="flex flex-col items-center gap-1 text-gray-300">
+                            <Landmark size={32} className="opacity-20" />
+                            <span className="text-[8px] font-black uppercase tracking-tighter opacity-10">Map Link</span>
+                          </div>
+                        }
+                      />
                       <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-[#FFD700] text-[#014227] px-1.5 py-0.5 rounded-lg text-[7px] md:text-[9px] font-black shadow-lg uppercase tracking-widest">
                         {place.dist}
                       </div>
@@ -460,17 +498,10 @@ const GeneralInfo: React.FC<GeneralInfoProps> = ({ schedules, attractions, dinin
                     <div key={sponsor.id} className="h-full bg-white rounded-[24px] md:rounded-[32px] overflow-hidden shadow-sm border border-gray-100 group hover:shadow-xl transition-all duration-500 flex flex-row md:flex-col items-stretch">
                       <div className="w-28 md:w-full md:h-32 shrink-0 relative bg-gray-50 flex items-center justify-center overflow-hidden">
                         <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none"></div>
-                        <img
-                          src={getLinkPreview(sponsor.website || sponsor.logo) || ''}
+                        <PreviewImage
+                          url={sponsor.website || sponsor.logo}
                           alt={sponsor.name}
                           className="w-full h-full object-cover transition duration-700 group-hover:scale-110"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            // If the current src is already the logo, don't try again to avoid infinite loop
-                            if (sponsor.logo && target.src !== sponsor.logo) {
-                              target.src = sponsor.logo;
-                            }
-                          }}
                         />
                       </div>
                       <div className="flex-1 p-3 md:p-6 flex flex-col justify-between min-w-0">
